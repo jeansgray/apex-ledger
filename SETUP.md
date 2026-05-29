@@ -29,46 +29,24 @@ Open a new terminal tab, then:
 which gh uv node npx
 ```
 
-## 3. GitHub CLI login
+## 3. GitLab (primary remote)
 
-```bash
-gh auth login
-```
+- **Remote:** `https://gitlab.com/jeansgray/apex-ledger.git` (or SSH `git@gitlab.com:jeansgray/apex-ledger.git`)
+- **CLI:** `glab` in `~/.local/bin` — run `glab auth login --web` or approve OAuth in Cursor (**Settings → Tools & MCP → GitLab**).
+- **MCP:** GitLab plugin uses HTTP `https://gitlab.com/api/v4/mcp` (OAuth via Cursor; no `GITHUB_TOKEN`).
 
-Choose: GitHub.com → HTTPS → Login with browser (or token).
+Create the project on GitLab first if it does not exist: **New project → Create blank project → name `apex-ledger`**.
 
-Verify:
+## 4. Push to GitLab
 
-```bash
-gh auth status
-gh repo view jeansgray/apex-ledger
-```
-
-If the repo is **private**, ensure your account can access it.
-
-## 4. Connect this folder to `apex-ledger` on GitHub
-
-From `~/Projects/apex-ledger` (after git works):
-
-**If the GitHub repo already has commits:**
+After `glab auth status` shows a valid token:
 
 ```bash
 cd ~/Projects/apex-ledger
-git clone https://github.com/jeansgray/apex-ledger.git /tmp/apex-remote
-# merge remote history, or replace local with clone — pick one workflow with your team
-```
-
-**If the GitHub repo is empty and this folder is the source of truth:**
-
-```bash
-cd ~/Projects/apex-ledger
-git init
-git remote add origin https://github.com/jeansgray/apex-ledger.git
-git add .
-git commit -m "Initial Apex Ledger layout with MiroFish vendor (Option B)"
-git branch -M main
 git push -u origin main
 ```
+
+Or: `glab repo create jeansgray/apex-ledger --private` then push.
 
 ## 5. MiroFish submodule
 

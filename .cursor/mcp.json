@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "GitLab": {
+      "type": "http",
+      "url": "https://gitlab.com/api/v4/mcp"
+    },
+    "gitlab-pat": {
+      "command": "/Users/jeaniealford/.local/bin/npx",
+      "args": ["-y", "@zereight/mcp-gitlab"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_TOKEN}",
+        "GITLAB_API_URL": "https://gitlab.com"
+      }
+    }
+  }
+}
