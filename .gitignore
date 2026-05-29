@@ -1,3 +1,5 @@
 # Local secrets (never commit)
 .config/
 *.local.env
+
+# Note: real PAT is in ~/.config/apex-ledger/env (outside repo)
