@@ -1,0 +1,5 @@
+# MiroFish upstream (AGPL-3.0) — keep in vendor/ or third_party/; do not merge into proprietary core without license review.
+[submodule "vendor/mirofish"]
+	path = vendor/mirofish
+	url = https://github.com/666ghj/MiroFish.git
+	branch = main
