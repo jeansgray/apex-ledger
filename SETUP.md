@@ -2,18 +2,17 @@
 
 ## 1. Xcode Command Line Tools (required for `git`)
 
-macOS `/usr/bin/git` is a stub until this is installed.
-
-**In Terminal (GUI session):**
-
-```bash
-xcode-select --install
-```
-
-Click **Install** in the dialog, wait until finished, then verify:
+**Status:** Installed (`/Library/Developer/CommandLineTools`). Verify anytime:
 
 ```bash
 git --version
+xcode-select -p
+```
+
+If `git` fails again, run `xcode-select --install` or:
+
+```bash
+sudo softwareupdate --install "Command Line Tools for Xcode 26.5-26.5" --verbose
 ```
 
 ## 2. Shell PATH
@@ -71,16 +70,15 @@ git branch -M main
 git push -u origin main
 ```
 
-## 5. Add MiroFish as a real submodule (recommended)
+## 5. MiroFish submodule
 
-The zip fallback extraction failed in this environment, so `vendor/mirofish` is not populated yet. After `git` works:
+**Status:** `vendor/mirofish` is added and initialized (commit `1f7bba0` on `main`).
+
+To refresh later:
 
 ```bash
 cd ~/Projects/apex-ledger
-rm -rf vendor/mirofish
-git submodule add https://github.com/666ghj/MiroFish.git vendor/mirofish
 git submodule update --init --recursive
-git commit -m "Track MiroFish as submodule (AGPL upstream)"
 ```
 
 ## 6. GitHub token for MCP
