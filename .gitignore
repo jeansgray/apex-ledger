@@ -1,6 +1,7 @@
 # Local runtime
 .env
 data/
+!src/apex_ledger/data/
 *.db
 skills/manifest.candidates.json
 
