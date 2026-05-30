@@ -124,6 +124,7 @@ class LedgerStore:
             rows = conn.execute("SELECT * FROM holdings ORDER BY symbol").fetchall()
         return [
             Holding(
+                id=row["id"],
                 symbol=row["symbol"],
                 quantity=row["quantity"],
                 cost_basis=row["cost_basis"],
@@ -131,6 +132,71 @@ class LedgerStore:
             )
             for row in rows
         ]
+
+    def add_holding(
+        self,
+        symbol: str,
+        quantity: float,
+        cost_basis: float | None = None,
+        account: str = "default",
+    ) -> int:
+        with self.connection() as conn:
+            cur = conn.execute(
+                "INSERT INTO holdings (symbol, quantity, cost_basis, account) VALUES (?, ?, ?, ?)",
+                (symbol.upper(), quantity, cost_basis, account),
+            )
+            return int(cur.lastrowid)
+
+    def update_holding(
+        self,
+        holding_id: int,
+        symbol: str,
+        quantity: float,
+        cost_basis: float | None = None,
+        account: str = "default",
+    ) -> None:
+        with self.connection() as conn:
+            conn.execute(
+                """
+                UPDATE holdings SET symbol = ?, quantity = ?, cost_basis = ?, account = ?
+                WHERE id = ?
+                """,
+                (symbol.upper(), quantity, cost_basis, account, holding_id),
+            )
+
+    def delete_holding(self, holding_id: int) -> None:
+        with self.connection() as conn:
+            conn.execute("DELETE FROM holdings WHERE id = ?", (holding_id,))
+
+    def add_transaction(
+        self,
+        posted_on: date,
+        description: str,
+        amount: float,
+        account: str = "default",
+    ) -> int:
+        with self.connection() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO transactions
+                (posted_on, description, amount, account, category, status, memo)
+                VALUES (?, ?, ?, ?, NULL, 'unmatched', NULL)
+                """,
+                (posted_on.isoformat(), description, amount, account),
+            )
+            return int(cur.lastrowid)
+
+    def delete_transaction(self, transaction_id: int) -> None:
+        with self.connection() as conn:
+            conn.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
+
+    def ledger_detail(self) -> dict:
+        snap = self.portfolio_snapshot()
+        return {
+            **snap,
+            "transactions": [t.model_dump(mode="json") for t in self.list_transactions()],
+            "is_demo": self.is_demo_portfolio(),
+        }
 
     def list_transactions(self, status: TransactionStatus | None = None) -> list[Transaction]:
         query = "SELECT * FROM transactions"

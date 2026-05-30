@@ -15,6 +15,7 @@ class TransactionStatus(str, Enum):
 
 
 class Holding(BaseModel):
+    id: int | None = None
     symbol: str
     quantity: float
     cost_basis: float | None = None

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from datetime import date
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -31,6 +33,20 @@ class CouncilRunRequest(BaseModel):
 class GateApprovalRequest(BaseModel):
     gate_kind: str
     approved: bool
+
+
+class HoldingWrite(BaseModel):
+    symbol: str = Field(min_length=1, max_length=12)
+    quantity: float = Field(gt=0)
+    cost_basis: float | None = Field(default=None, ge=0)
+    account: str = Field(default="brokerage", min_length=1)
+
+
+class TransactionWrite(BaseModel):
+    posted_on: str = Field(description="ISO date YYYY-MM-DD")
+    description: str = Field(min_length=1)
+    amount: float = Field(description="Negative for outflows")
+    account: str = Field(default="checking", min_length=1)
 
 
 @app.get("/health")
@@ -126,4 +142,95 @@ def approve_gate(run_id: str, body: GateApprovalRequest) -> JSONResponse:
 @app.get("/ledger/portfolio")
 def portfolio() -> dict:
     _orchestrator.ledger.seed_demo_data()
-    return _orchestrator.ledger.portfolio_snapshot()
+    snap = _orchestrator.ledger.portfolio_snapshot()
+    snap["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    return snap
+
+
+@app.get("/ledger/detail")
+def ledger_detail() -> dict:
+    _orchestrator.ledger.seed_demo_data()
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    detail["integrations"] = {
+        "plaid_configured": bool(_settings.plaid_client_id),
+        "broker_sync": "manual",
+    }
+    return detail
+
+
+@app.post("/ledger/holdings")
+def add_holding(body: HoldingWrite) -> dict:
+    hid = _orchestrator.ledger.add_holding(
+        body.symbol, body.quantity, body.cost_basis, body.account
+    )
+    return {"id": hid, "ledger_mode": "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"}
+
+
+@app.put("/ledger/holdings/{holding_id}")
+def update_holding(holding_id: int, body: HoldingWrite) -> dict:
+    _orchestrator.ledger.update_holding(
+        holding_id, body.symbol, body.quantity, body.cost_basis, body.account
+    )
+    return {"ok": True}
+
+
+@app.delete("/ledger/holdings/{holding_id}")
+def remove_holding(holding_id: int) -> dict:
+    _orchestrator.ledger.delete_holding(holding_id)
+    return {"ok": True}
+
+
+@app.post("/ledger/transactions")
+def add_transaction(body: TransactionWrite) -> dict:
+    try:
+        posted = date.fromisoformat(body.posted_on)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid posted_on date") from exc
+    tid = _orchestrator.ledger.add_transaction(
+        posted, body.description, body.amount, body.account
+    )
+    return {"id": tid}
+
+
+@app.delete("/ledger/transactions/{transaction_id}")
+def remove_transaction(transaction_id: int) -> dict:
+    _orchestrator.ledger.delete_transaction(transaction_id)
+    return {"ok": True}
+
+
+@app.post("/ledger/reset-demo")
+def reset_demo_ledger() -> dict:
+    _orchestrator.ledger.clear_portfolio()
+    with _orchestrator.ledger.connection() as conn:
+        _orchestrator.ledger._insert_demo_rows(conn)
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["ledger_mode"] = "demo"
+    return detail
+
+
+@app.post("/ledger/import-csv")
+async def import_holdings_csv(file: UploadFile = File(...)) -> dict:
+    import csv
+    import io
+
+    raw = (await file.read()).decode("utf-8")
+    rows: list[tuple[str, float, float | None, str]] = []
+    reader = csv.DictReader(io.StringIO(raw))
+    for line in reader:
+        symbol = (line.get("symbol") or "").strip().upper()
+        if not symbol:
+            continue
+        quantity = float(line["quantity"])
+        cost_raw = (line.get("cost_basis") or "").strip()
+        cost_basis = float(cost_raw) if cost_raw else None
+        account = (line.get("account") or "brokerage").strip() or "brokerage"
+        rows.append((symbol, quantity, cost_basis, account))
+    if not rows:
+        raise HTTPException(status_code=400, detail="No holdings found in CSV")
+    _orchestrator.ledger.clear_portfolio()
+    count = _orchestrator.ledger.replace_holdings(rows)
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["imported"] = count
+    detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    return detail

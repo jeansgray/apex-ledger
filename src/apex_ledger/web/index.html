@@ -210,6 +210,31 @@
     .empty { color: var(--muted); font-size: 0.85rem; font-style: italic; }
     details.mini { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
     details.mini summary { cursor: pointer; color: var(--text); }
+    .portfolio-setup { margin-bottom: 1.25rem; }
+    .portfolio-setup .hint { margin-bottom: 0.75rem; }
+    .integr-row { display: grid; gap: 0.65rem; margin-bottom: 1rem; }
+    @media (min-width: 640px) { .integr-row { grid-template-columns: 1fr 1fr; } }
+    .integr-card {
+      border: 1px dashed var(--line); border-radius: 12px; padding: 0.75rem;
+      background: var(--surface-2); font-size: 0.82rem;
+    }
+    .integr-card.soon { opacity: 0.75; }
+    .integr-card strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+    .ledger-grid { display: grid; gap: 1rem; }
+    @media (min-width: 800px) { .ledger-grid { grid-template-columns: 1fr 1fr; } }
+    .ledger-block h3 { margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .ledger-list { margin: 0 0 0.75rem; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }
+    .ledger-list li {
+      display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+      padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.85rem;
+    }
+    .ledger-list li:last-child { border-bottom: 0; }
+    .form-grid { display: grid; gap: 0.45rem; grid-template-columns: 1fr 1fr; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid input, .form-grid select { padding: 0.5rem; font-size: 0.85rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .toolbar button { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
+    .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.35); }
   </style>
 </head>
 <body>
@@ -225,6 +250,55 @@
       </div>
       <span id="status-pill" class="status-pill demo">Demo</span>
     </header>
+
+    <!-- Portfolio setup (your data) -->
+    <section class="card portfolio-setup" id="portfolio-setup">
+      <div class="card-head">
+        <h2>Your portfolio</h2>
+        <span id="ledger-mode-tag" class="signal-chip signal-mixed">Demo</span>
+      </div>
+      <p class="hint">Add your holdings and bank activity here — council forecasts and suggested moves use this data (stored locally in <code>data/ledger.db</code>).</p>
+      <div class="integr-row">
+        <div class="integr-card soon" id="plaid-card">
+          <strong>Bank sync (Plaid)</strong>
+          <span id="plaid-status">Coming soon — add <code>PLAID_CLIENT_ID</code> to <code>.env</code> when ready.</span>
+        </div>
+        <div class="integr-card">
+          <strong>Broker / CSV import</strong>
+          <label class="hint" for="csv-upload">Upload holdings CSV (<code>symbol, quantity, cost_basis, account</code>)</label>
+          <input id="csv-upload" type="file" accept=".csv,text/csv" />
+        </div>
+      </div>
+      <div class="ledger-grid">
+        <div class="ledger-block">
+          <h3>Holdings</h3>
+          <ul class="ledger-list" id="ledger-holdings"></ul>
+          <form id="holding-form" class="form-grid">
+            <input name="symbol" placeholder="Symbol (VTI)" required maxlength="12" />
+            <input name="quantity" type="number" step="any" min="0.0001" placeholder="Shares" required />
+            <input name="cost_basis" type="number" step="0.01" min="0" placeholder="Cost basis ($)" />
+            <input name="account" placeholder="Account" value="brokerage" />
+            <button class="btn-ok full" type="submit">Add holding</button>
+          </form>
+        </div>
+        <div class="ledger-block">
+          <h3>Bank activity (unmatched)</h3>
+          <ul class="ledger-list" id="ledger-transactions"></ul>
+          <form id="transaction-form" class="form-grid">
+            <input name="posted_on" type="date" required />
+            <input name="amount" type="number" step="0.01" placeholder="Amount (-59.99)" required />
+            <input name="description" class="full" placeholder="Description" required />
+            <input name="account" placeholder="Account" value="checking" />
+            <button class="btn-ok full" type="submit">Add transaction</button>
+          </form>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-ghost" type="button" id="reload-ledger-btn">Refresh</button>
+        <button class="btn-ghost" type="button" id="reset-demo-btn">Reload demo sample</button>
+      </div>
+      <p class="run-status" id="ledger-status"></p>
+    </section>
 
     <!-- ZONE 2: Ask -->
     <section class="ask-card">
@@ -702,21 +776,150 @@
     });
 
     api("/config").then(cfg => {
+      updateStatusPill(cfg);
+      if (cfg.default_simulation_id) document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
+      if (cfg.default_cash_to_deploy) document.getElementById("cash").value = cfg.default_cash_to_deploy;
+    }).catch(() => {});
+
+    function updateStatusPill(cfg) {
       const pill = document.getElementById("status-pill");
+      const tag = document.getElementById("ledger-mode-tag");
       const parts = [];
       if (cfg.ledger_mode === "demo") {
         parts.push("Demo portfolio");
         pill.className = "status-pill demo";
-      } else if (cfg.ledger_mode === "personal") {
+        tag.className = "signal-chip signal-mixed";
+        tag.textContent = "Demo data";
+      } else {
         parts.push("Your portfolio");
         pill.className = "status-pill live";
+        tag.className = "signal-chip signal-aligned";
+        tag.textContent = "Personal";
       }
       if (cfg.keys?.valid) parts.push("Live sim");
       else parts.push("Demo sim");
       pill.textContent = parts.join(" · ");
-      if (cfg.default_simulation_id) document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
-      if (cfg.default_cash_to_deploy) document.getElementById("cash").value = cfg.default_cash_to_deploy;
-    }).catch(() => {});
+    }
+
+    async function loadLedger() {
+      const status = document.getElementById("ledger-status");
+      try {
+        const data = await api("/ledger/detail");
+        renderLedgerPanel(data);
+        const cfg = await api("/config");
+        updateStatusPill(cfg);
+        if (data.integrations?.plaid_configured) {
+          document.getElementById("plaid-status").textContent = "Plaid keys detected — sync UI ships next.";
+        }
+      } catch (err) {
+        status.textContent = "Could not load portfolio: " + err.message;
+      }
+    }
+
+    function renderLedgerPanel(data) {
+      const holdingsEl = document.getElementById("ledger-holdings");
+      holdingsEl.innerHTML = (data.holdings || []).map(h =>
+        '<li><span><strong>' + esc(h.symbol) + '</strong> · ' + esc(h.quantity) +
+        ' sh · $' + esc(Number(h.cost_basis || 0).toLocaleString()) + '</span>' +
+        '<button class="btn-danger" type="button" data-del-holding="' + esc(h.id) + '">Remove</button></li>'
+      ).join("") || '<li class="empty">No holdings yet — add below or import CSV.</li>';
+
+      holdingsEl.querySelectorAll("[data-del-holding]").forEach(btn => {
+        btn.onclick = async () => {
+          await api("/ledger/holdings/" + btn.dataset.delHolding, { method: "DELETE" });
+          loadLedger();
+        };
+      });
+
+      const txEl = document.getElementById("ledger-transactions");
+      txEl.innerHTML = (data.transactions || []).filter(t => t.status === "unmatched").map(t =>
+        '<li><span>' + esc(t.posted_on) + ' · ' + esc(t.description) + ' · <strong>$' +
+        esc(Number(t.amount).toFixed(2)) + '</strong></span>' +
+        '<button class="btn-danger" type="button" data-del-tx="' + esc(t.id) + '">Remove</button></li>'
+      ).join("") || '<li class="empty">No unmatched charges.</li>';
+
+      txEl.querySelectorAll("[data-del-tx]").forEach(btn => {
+        btn.onclick = async () => {
+          await api("/ledger/transactions/" + btn.dataset.delTx, { method: "DELETE" });
+          loadLedger();
+        };
+      });
+    }
+
+    document.getElementById("holding-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const status = document.getElementById("ledger-status");
+      try {
+        await api("/ledger/holdings", {
+          method: "POST",
+          body: JSON.stringify({
+            symbol: fd.get("symbol"),
+            quantity: Number(fd.get("quantity")),
+            cost_basis: fd.get("cost_basis") ? Number(fd.get("cost_basis")) : null,
+            account: fd.get("account") || "brokerage",
+          }),
+        });
+        e.target.reset();
+        e.target.querySelector('[name="account"]').value = "brokerage";
+        status.textContent = "Holding saved.";
+        loadLedger();
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+
+    document.getElementById("transaction-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const status = document.getElementById("ledger-status");
+      try {
+        await api("/ledger/transactions", {
+          method: "POST",
+          body: JSON.stringify({
+            posted_on: fd.get("posted_on"),
+            description: fd.get("description"),
+            amount: Number(fd.get("amount")),
+            account: fd.get("account") || "checking",
+          }),
+        });
+        e.target.reset();
+        e.target.querySelector('[name="account"]').value = "checking";
+        status.textContent = "Transaction saved.";
+        loadLedger();
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+
+    document.getElementById("csv-upload").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const status = document.getElementById("ledger-status");
+      const body = new FormData();
+      body.append("file", file);
+      try {
+        const res = await fetch("/ledger/import-csv", { method: "POST", body });
+        if (!res.ok) throw new Error(await res.text());
+        status.textContent = "Imported holdings from CSV.";
+        loadLedger();
+      } catch (err) {
+        status.textContent = err.message;
+      }
+      e.target.value = "";
+    });
+
+    document.getElementById("reset-demo-btn").addEventListener("click", async () => {
+      if (!confirm("Replace your portfolio with the demo sample (VTI, AAPL, BND)?")) return;
+      await api("/ledger/reset-demo", { method: "POST" });
+      document.getElementById("ledger-status").textContent = "Demo portfolio loaded.";
+      loadLedger();
+    });
+
+    document.getElementById("reload-ledger-btn").addEventListener("click", loadLedger);
+
+    document.getElementById("transaction-form").querySelector('[name="posted_on"]').valueAsDate = new Date();
+    loadLedger();
   </script>
 </body>
 </html>

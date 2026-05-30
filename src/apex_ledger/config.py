@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model_name: str = "gpt-4o-mini"
 
+    # Future bank sync (Plaid) — set in .env when ready
+    plaid_client_id: str = ""
+    plaid_secret: str = ""
+
     def ensure_dirs(self) -> None:
         self.apex_data_dir.mkdir(parents=True, exist_ok=True)
         self.apex_skills_dir.mkdir(parents=True, exist_ok=True)
