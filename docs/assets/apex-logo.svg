@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Apex Ledger">
+  <defs>
+    <linearGradient id="apexGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="55%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#070b12"/>
+  <!-- Apex peak + predator profile -->
+  <path d="M8 52 L32 8 L56 52 Z" fill="none" stroke="url(#apexGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M22 46 C26 34 34 26 46 22 C40 28 36 38 34 46 Z" fill="url(#apexGrad)" opacity="0.95"/>
+  <path d="M46 22 L52 18 L48 28 Z" fill="#e2e8f0"/>
+  <circle cx="40" cy="30" r="2.2" fill="url(#eyeGrad)"/>
+  <path d="M18 50 H46" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+  <path d="M20 50 L24 46 M28 50 L32 46 M36 50 L40 46" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

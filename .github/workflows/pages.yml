@@ -23,6 +23,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate collaborator site
+        run: |
+          set -euo pipefail
+          test -f docs/index.html
+          test -f docs/styles.css
+          test -f docs/.nojekyll
+          test -f docs/assets/apex-logo.svg
+          grep -q 'assets/apex-logo.svg' docs/index.html
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

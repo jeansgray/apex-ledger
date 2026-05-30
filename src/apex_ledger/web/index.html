@@ -3,739 +3,663 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Apex Ledger — Your money, explained simply</title>
+  <title>Apex Ledger</title>
+  <link rel="icon" href="/static/apex-logo.svg" type="image/svg+xml" />
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f4f7fb;
-      --surface: #ffffff;
-      --text: #1a2332;
-      --muted: #5c6b7a;
-      --line: #dde4ee;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
-      --ok: #059669;
-      --ok-soft: #d1fae5;
-      --warn: #d97706;
-      --warn-soft: #fef3c7;
-      --danger: #dc2626;
-      --danger-soft: #fee2e2;
-      --info-soft: #e0e7ff;
+      color-scheme: dark;
+      --bg: #05080f;
+      --surface: #0e1420;
+      --surface-2: #141c2c;
+      --line: #1f2a3d;
+      --text: #f1f5f9;
+      --muted: #8b9cb3;
+      --accent: #38bdf8;
+      --accent-2: #0ea5e9;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --radius: 14px;
+      --max: 1120px;
       font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-      line-height: 1.5;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); }
-    header {
-      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-      color: white;
-      padding: 1.5rem 1.25rem 2rem;
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      background-image: radial-gradient(ellipse 70% 45% at 50% -15%, rgba(14, 165, 233, 0.12), transparent);
     }
-    header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
-    header p { margin: 0.4rem 0 0; opacity: 0.92; max-width: 42rem; }
-    main { max-width: 920px; margin: -1rem auto 3rem; padding: 0 1rem; }
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-    }
-    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; }
-    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
-    textarea, input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 0.75rem;
-      font: inherit;
-      background: #fbfdff;
-    }
-    textarea:focus, input:focus {
-      outline: 2px solid var(--accent-soft);
-      border-color: var(--accent);
-    }
-    button {
-      border: 0;
-      border-radius: 10px;
-      padding: 0.7rem 1rem;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 0.75rem; }
-    .btn-primary:disabled { opacity: 0.6; cursor: wait; }
-    .btn-ok { background: var(--ok); color: white; }
-    .btn-ghost { background: white; border: 1px solid var(--line); color: var(--text); }
-    .status { font-size: 0.875rem; color: var(--muted); margin-top: 0.75rem; min-height: 1.25rem; }
-    .hero h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
-    .hero p { margin: 0; color: var(--muted); }
-    .bottom-line {
-      margin-top: 1rem;
-      padding: 0.85rem 1rem;
-      background: var(--accent-soft);
-      border-radius: 10px;
-      font-size: 0.95rem;
-    }
-    .section-title {
-      margin: 0 0 0.75rem;
-      font-size: 1.05rem;
+    .shell { max-width: var(--max); margin: 0 auto; padding: 0 1rem 4rem; }
+
+    /* ── Wireframe zone 1: App bar ── */
+    .appbar {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 1.25rem;
     }
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 0.2rem 0.5rem;
-      border-radius: 999px;
-    }
-    .badge-now { background: var(--danger-soft); color: var(--danger); }
-    .badge-soon { background: var(--warn-soft); color: var(--warn); }
-    .badge-consider { background: var(--info-soft); color: #4338ca; }
-    .badge-done { background: var(--ok-soft); color: var(--ok); }
-    .action-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
-    .action-item {
-      border: 1px solid var(--line);
+    .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
+    .brand-mark {
+      width: 48px; height: 48px; flex-shrink: 0;
       border-radius: 12px;
-      padding: 1rem;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 28px rgba(14,165,233,0.2);
+    }
+    .brand h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .brand p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--muted); }
+    .status-pill {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.35rem 0.65rem; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--muted); white-space: nowrap;
+    }
+    .status-pill.live { border-color: rgba(52,211,153,0.4); color: var(--ok); background: rgba(52,211,153,0.08); }
+    .status-pill.demo { border-color: rgba(251,191,36,0.4); color: var(--warn); background: rgba(251,191,36,0.08); }
+
+    /* ── Wireframe zone 2: Ask ── */
+    .ask-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      margin-bottom: 1.25rem;
+    }
+    .ask-card label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    textarea, input {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px;
+      padding: 0.7rem 0.85rem; font: inherit; background: var(--bg); color: var(--text);
+    }
+    textarea:focus, input:focus { outline: 2px solid rgba(56,189,248,0.35); border-color: var(--accent); }
+    .ask-row { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+    @media (min-width: 640px) { .ask-row { grid-template-columns: 1fr auto auto; align-items: end; } }
+    .ask-row .field-cash { max-width: 140px; }
+    button {
+      border: 0; border-radius: 10px; padding: 0.75rem 1.1rem;
+      font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-2), #2563eb);
+      color: #fff; box-shadow: 0 6px 24px rgba(14,165,233,0.25);
+    }
+    .btn-primary:disabled { opacity: 0.55; cursor: wait; }
+    .btn-ok { background: var(--ok); color: #052e1a; }
+    .btn-ghost { background: var(--surface-2); border: 1px solid var(--line); color: var(--text); }
+    .run-status { font-size: 0.85rem; color: var(--muted); margin-top: 0.65rem; min-height: 1.2rem; }
+
+    /* ── Wireframe zone 3: Results grid ── */
+    .results-grid {
       display: grid;
-      gap: 0.5rem;
+      gap: 1.25rem;
     }
-    .action-item.done { opacity: 0.75; background: #f8fafc; }
-    .action-head { display: flex; justify-content: space-between; gap: 0.5rem; align-items: start; }
-    .action-head strong { font-size: 1rem; }
-    .action-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .holdings { display: grid; gap: 0.65rem; }
-    .holding {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.25rem 1rem;
-      padding: 0.85rem;
-      background: #f8fafc;
-      border-radius: 10px;
+    @media (min-width: 960px) {
+      .results-grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+    }
+    .card {
+      background: var(--surface);
       border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      margin-bottom: 1rem;
     }
-    .holding .sym { font-weight: 700; font-size: 1.05rem; }
-    .holding .name { color: var(--muted); font-size: 0.875rem; }
-    .holding .meta { grid-column: 1 / -1; font-size: 0.875rem; color: var(--muted); }
-    .scenarios { display: grid; gap: 0.75rem; }
-    @media (min-width: 700px) { .scenarios { grid-template-columns: repeat(3, 1fr); } }
-    .scenario {
-      border-radius: 12px;
-      padding: 1rem;
-      border: 1px solid var(--line);
-      display: grid;
-      gap: 0.5rem;
-      align-content: start;
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      margin-bottom: 0.85rem;
     }
-    .scenario.base { border-top: 4px solid #64748b; }
-    .scenario.upside { border-top: 4px solid var(--ok); background: #f0fdf4; }
-    .scenario.downside { border-top: 4px solid var(--warn); background: #fffbeb; }
-    .scenario .tag { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-    .scenario h3 { margin: 0; font-size: 0.95rem; }
-    .scenario .do {
-      font-size: 0.875rem;
-      padding-top: 0.5rem;
-      border-top: 1px dashed var(--line);
+    .card-head h2 { margin: 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+    .card-head .tag { font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.45rem; border-radius: 999px; background: rgba(248,113,113,0.15); color: var(--danger); }
+
+    /* Verdict */
+    .verdict h3 { margin: 0 0 0.35rem; font-size: 1.35rem; line-height: 1.25; }
+    .verdict .lead { color: var(--muted); margin: 0 0 0.85rem; font-size: 0.95rem; }
+    .direct { padding: 0.85rem; border-radius: 10px; background: rgba(14,165,233,0.08); border: 1px solid rgba(56,189,248,0.2); margin-bottom: 0.75rem; font-size: 0.95rem; }
+    .direct strong { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 0.3rem; }
+    .bottom { padding: 0.75rem; border-radius: 10px; background: var(--surface-2); font-size: 0.9rem; border-left: 3px solid var(--accent); }
+
+    /* Forecast rail — always visible */
+    .forecast-rail { position: sticky; top: 1rem; }
+    .forecast-rail .card { margin-bottom: 0.75rem; }
+    .signal-chip {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.25rem 0.5rem; border-radius: 999px;
     }
-    .scenario .do strong { color: var(--accent); display: block; margin-bottom: 0.2rem; font-size: 0.75rem; text-transform: uppercase; }
-    .book-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 0.65rem;
-      background: #fbfdff;
+    .signal-aligned { background: rgba(52,211,153,0.12); color: var(--ok); }
+    .signal-mixed { background: rgba(251,191,36,0.12); color: var(--warn); }
+    .signal-narrative { background: rgba(99,102,241,0.12); color: #a5b4fc; }
+    .forecast-item {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--line);
     }
-    .book-item header { background: none; color: inherit; padding: 0; }
-    .book-item .row { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-    .book-item .amount { font-weight: 700; font-size: 1.1rem; }
-    .book-item .why { font-size: 0.875rem; color: var(--muted); margin-top: 0.5rem; }
-    .watch { padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 0.5rem; border: 1px solid var(--line); }
-    .watch.info { background: var(--info-soft); }
-    .watch.medium { background: var(--warn-soft); }
-    .watch.low { background: #f8fafc; }
-    .watch strong { display: block; margin-bottom: 0.25rem; }
-    .watch .suggestion { font-size: 0.875rem; margin-top: 0.35rem; color: var(--muted); }
-    .insights { margin: 0; padding-left: 1.1rem; color: var(--muted); }
-    .insights li { margin-bottom: 0.5rem; }
-    details { margin-top: 0.75rem; font-size: 0.875rem; color: var(--muted); }
-    details summary { cursor: pointer; font-weight: 600; color: var(--text); }
-    .gate-box {
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 12px;
-      background: var(--warn-soft);
-      border: 1px solid #fcd34d;
+    .forecast-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .forecast-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; }
+    .forecast-top .sym { font-weight: 800; font-size: 1rem; }
+    .forecast-top .pct { font-size: 0.85rem; font-weight: 700; }
+    .pct.up { color: var(--ok); }
+    .pct.down { color: var(--danger); }
+    .pct.flat { color: var(--muted); }
+    .chart-box {
+      position: relative;
+      height: 72px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.35);
+      overflow: hidden;
     }
-    .gate-box.done { background: var(--ok-soft); border-color: #6ee7b7; }
-    .direct-answer {
-      margin: 1rem 0 0;
-      padding: 1rem 1.1rem;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      font-size: 1rem;
+    .chart-box canvas { display: block; width: 100%; height: 100%; }
+    .chart-tip {
+      position: absolute; pointer-events: none; top: 6px;
+      background: rgba(5,8,15,0.92); border: 1px solid var(--line);
+      border-radius: 6px; padding: 0.15rem 0.4rem; font-size: 0.65rem;
+      opacity: 0; transition: opacity 0.12s;
     }
-    .direct-answer strong { display: block; margin-bottom: 0.35rem; color: var(--accent); }
-    .keys-banner {
-      margin-top: 0.75rem;
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      font-size: 0.875rem;
-      border: 1px solid var(--line);
+    .chart-box:hover .chart-tip.show { opacity: 1; }
+    .forecast-caption { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; }
+
+    /* Moves */
+    .move {
+      border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem;
+      background: var(--surface-2); margin-bottom: 0.65rem;
     }
-    .keys-banner.ok { background: var(--ok-soft); border-color: #6ee7b7; }
-    .keys-banner.warn { background: var(--warn-soft); border-color: #fcd34d; }
-    .move-list { display: grid; gap: 0.75rem; }
-    .move-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-      background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
-      display: grid;
-      gap: 0.45rem;
+    .move:last-child { margin-bottom: 0; }
+    .move-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: start; }
+    .move-kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; color: var(--accent); text-transform: uppercase; }
+    .move h4 { margin: 0.15rem 0 0; font-size: 1rem; }
+    .move p { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--muted); }
+    .move-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; font-size: 0.75rem; }
+    .move-meta span { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 0.1rem 0.45rem; }
+    .sim-banner {
+      font-size: 0.8rem; color: var(--muted); padding: 0.55rem 0.7rem;
+      border-radius: 8px; border: 1px dashed var(--line); margin-bottom: 0.75rem;
     }
-    .move-head { display: flex; justify-content: space-between; gap: 0.75rem; align-items: start; }
-    .move-symbol {
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: var(--accent);
-      text-transform: uppercase;
+    .sim-banner.running { border-color: rgba(56,189,248,0.4); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 50% { background: rgba(14,165,233,0.06); } }
+
+    /* Actions — compact */
+    .action { display: flex; gap: 0.65rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line); align-items: start; }
+    .action:last-child { border-bottom: 0; }
+    .action-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 0.45rem; flex-shrink: 0; }
+    .action-dot.now { background: var(--danger); }
+    .action-dot.soon { background: var(--warn); }
+    .action-dot.consider { background: var(--accent); }
+    .action-dot.done { background: var(--ok); }
+    .action strong { display: block; font-size: 0.9rem; }
+    .action span { font-size: 0.8rem; color: var(--muted); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tab {
+      background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+      padding: 0.45rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
     }
-    .move-title { margin: 0.15rem 0 0; font-size: 1.05rem; }
-    .move-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--muted); }
-    .move-meta span {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.15rem 0.55rem;
-    }
-    .move-citation {
-      font-size: 0.8rem;
-      color: var(--muted);
-      border-left: 3px solid var(--accent-soft);
-      padding-left: 0.65rem;
-      margin-top: 0.25rem;
-    }
-    .move-citation.kronos { border-left-color: #a7f3d0; }
-    .move-citation.mirofish { border-left-color: #bfdbfe; }
-    .signal-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-    }
-    .signal-aligned { background: var(--ok-soft); color: var(--ok); }
-    .signal-mixed { background: var(--warn-soft); color: var(--warn); }
-    .signal-narrative { background: var(--info-soft); color: #4338ca; }
-    .forecast-grid { display: grid; gap: 0.75rem; }
-    @media (min-width: 640px) { .forecast-grid { grid-template-columns: repeat(3, 1fr); } }
-    .forecast-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 1rem;
-      background: #fbfdff;
-    }
-    .forecast-card .sym { font-weight: 800; font-size: 1.1rem; }
-    .forecast-card .dir-up { color: var(--ok); }
-    .forecast-card .dir-down { color: var(--danger); }
-    .forecast-card .dir-flat { color: var(--muted); }
-    .sparkline {
-      display: flex;
-      align-items: flex-end;
-      gap: 2px;
-      height: 48px;
-      margin-top: 0.5rem;
-    }
-    .sparkline span {
-      flex: 1;
-      background: linear-gradient(180deg, #93c5fd 0%, #2563eb 100%);
-      border-radius: 2px 2px 0 0;
-      min-height: 4px;
-    }
-    .debate-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
-    .debate-item {
-      padding: 0.75rem 0.85rem;
-      border-radius: 10px;
-      background: #f8fafc;
-      border: 1px solid var(--line);
-      font-size: 0.875rem;
-      color: var(--text);
-    }
-    .sim-status {
-      font-size: 0.875rem;
-      color: var(--muted);
-      padding: 0.65rem 0.85rem;
-      background: #f8fafc;
-      border-radius: 10px;
-      border: 1px dashed var(--line);
-      margin-bottom: 0.75rem;
-    }
-    .row-2 { display: grid; gap: 0.75rem; }
-    @media (min-width: 640px) { .row-2 { grid-template-columns: 1fr 160px; align-items: end; } }
+    .tab.active { background: rgba(14,165,233,0.12); border-color: rgba(56,189,248,0.45); color: var(--text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .scenario-grid { display: grid; gap: 0.65rem; }
+    @media (min-width: 700px) { .scenario-grid { grid-template-columns: repeat(3, 1fr); } }
+    .scenario { border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem; background: var(--surface-2); }
+    .scenario .lbl { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted); }
+    .scenario h4 { margin: 0.25rem 0; font-size: 0.95rem; }
+    .scenario p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+    .holding { display: flex; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
+    .holding:last-child { border-bottom: 0; }
+    .debate li { margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--muted); padding-left: 0.85rem; border-left: 2px solid var(--accent); list-style: none; }
+    .gate { margin-top: 0.75rem; padding: 0.85rem; border-radius: 10px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
+    .gate.done { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.25); }
+    .gate-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .empty { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+    details.mini { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
+    details.mini summary { cursor: pointer; color: var(--text); }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Apex Ledger</h1>
-    <p>Plain-language guidance for your investments and everyday money — with clear next steps, not jargon.</p>
-  </header>
-
-  <main>
-    <section class="panel">
-      <label for="question">What do you want to understand?</label>
-      <textarea id="question" rows="3" placeholder="Example: If interest rates drop, what might happen to my ETF portfolio?">How would a Fed rate cut affect my ETF-heavy portfolio?</textarea>
-      <p class="hint">Ask in everyday language. We'll connect it to your holdings and a what-if scenario.</p>
-      <details>
-        <summary>Advanced options</summary>
-        <div class="row-2" style="margin-top:0.75rem">
-          <div>
-            <label for="cash">New money to deploy ($)</label>
-            <input id="cash" type="number" min="100" step="100" value="1000" />
-            <p class="hint">Used to size suggested buy/hold/trim amounts — not a real trade.</p>
-          </div>
-          <div>
-            <label for="simulation-id">Scenario simulation ID</label>
-            <input id="simulation-id" placeholder="Leave blank to use default" />
-          </div>
+  <div class="shell">
+    <!-- ZONE 1: App bar -->
+    <header class="appbar">
+      <div class="brand">
+        <img class="brand-mark" src="/static/apex-logo.svg" alt="" width="48" height="48" />
+        <div>
+          <h1>Apex Ledger</h1>
+          <p>Portfolio intelligence · apex predator clarity</p>
         </div>
-      </details>
-      <div id="keys-banner" class="keys-banner warn" hidden></div>
-      <button class="btn-primary" id="run-btn">Get my summary & action list</button>
-      <p class="status" id="status"></p>
+      </div>
+      <span id="status-pill" class="status-pill demo">Demo</span>
+    </header>
+
+    <!-- ZONE 2: Ask -->
+    <section class="ask-card">
+      <label for="question">What should we analyze?</label>
+      <textarea id="question" rows="2" placeholder="e.g. If rates drop, what happens to my ETFs?">How would a Fed rate cut affect my ETF-heavy portfolio?</textarea>
+      <div class="ask-row">
+        <details class="mini" style="align-self:center">
+          <summary>Options</summary>
+          <div style="margin-top:0.5rem">
+            <label for="simulation-id">Simulation ID</label>
+            <input id="simulation-id" placeholder="Default" />
+          </div>
+        </details>
+        <div class="field-cash">
+          <label for="cash">Cash to deploy ($)</label>
+          <input id="cash" type="number" min="100" step="100" value="1000" />
+        </div>
+        <button class="btn-primary" id="run-btn" type="button">Analyze</button>
+      </div>
+      <p class="run-status" id="status"></p>
     </section>
 
+    <!-- ZONE 3+: Results (hidden until run) -->
     <div id="results" hidden>
-      <section class="panel hero" id="hero"></section>
+      <div class="results-grid">
+        <!-- LEFT: Verdict → Moves → Actions -->
+        <div class="main-col">
+          <article class="card verdict" id="verdict"></article>
 
-      <section class="panel" id="moves-section">
-        <h2 class="section-title">Suggested moves <span class="badge badge-now">Review first</span></h2>
-        <p class="hint" style="margin-bottom:0.75rem">
-          Simulation-informed ideas for your portfolio — approve to save; nothing trades automatically.
-        </p>
-        <div id="sim-status" class="sim-status" hidden></div>
-        <div class="move-list" id="suggested-moves"></div>
-        <div id="moves-gate" hidden></div>
-      </section>
+          <article class="card" id="moves-block">
+            <div class="card-head">
+              <h2>Suggested moves</h2>
+              <span class="tag">Review first</span>
+            </div>
+            <div id="sim-banner" class="sim-banner" hidden></div>
+            <div id="suggested-moves"></div>
+            <div id="moves-gate" hidden></div>
+          </article>
 
-      <section class="panel" id="forecasts-section">
-        <h2 class="section-title">Market forecasts <span id="signal-badge" class="signal-badge signal-aligned" hidden></span></h2>
-        <p class="hint" style="margin-bottom:0.75rem">Kronos-style price paths for your holdings — numeric evidence for the council.</p>
-        <div class="forecast-grid" id="forecasts"></div>
-      </section>
+          <article class="card">
+            <div class="card-head"><h2>Next steps</h2></div>
+            <div id="actions"></div>
+          </article>
+        </div>
 
-      <section class="panel" id="debate-section">
-        <h2 class="section-title">How the council debated this</h2>
-        <p class="hint" style="margin-bottom:0.75rem">Quant vs narrative — where they agreed or pushed back.</p>
-        <ul class="debate-list" id="council-debate"></ul>
-      </section>
+        <!-- RIGHT: Forecast rail (always visible) -->
+        <aside class="forecast-rail" id="forecast-rail">
+          <article class="card">
+            <div class="card-head">
+              <h2>Live forecasts</h2>
+              <span id="signal-chip" class="signal-chip signal-aligned" hidden></span>
+            </div>
+            <p style="margin:0 0 0.75rem;font-size:0.78rem;color:var(--muted)">Animated price paths for your holdings — hover to inspect.</p>
+            <div id="forecasts"></div>
+          </article>
+        </aside>
+      </div>
 
-      <section class="panel">
-        <h2 class="section-title">Your action list</h2>
-        <p class="hint" id="action-hint">Work top to bottom — items marked “Do first” matter most.</p>
-        <ul class="action-list" id="actions"></ul>
-      </section>
+      <!-- ZONE 4: Tabbed secondary content -->
+      <nav class="tabs" role="tablist" aria-label="Details">
+        <button class="tab active" data-tab="scenarios" type="button">Scenarios</button>
+        <button class="tab" data-tab="portfolio" type="button">Portfolio</button>
+        <button class="tab" data-tab="records" type="button">Records</button>
+        <button class="tab" data-tab="behind" type="button">Behind the scenes</button>
+      </nav>
 
-      <section class="panel" id="research-section">
-        <h2 class="section-title">Key things to know</h2>
-        <ul class="insights" id="research"></ul>
-      </section>
-
-      <section class="panel">
-        <h2 class="section-title">Your investments at a glance</h2>
-        <p id="portfolio-summary" class="hint" style="margin-bottom:0.75rem"></p>
-        <div class="holdings" id="holdings"></div>
-      </section>
-
-      <section class="panel">
-        <h2 class="section-title">Three ways things could play out</h2>
-        <p class="hint" style="margin-bottom:0.75rem">Not predictions — helpful frames so you can prepare without panic.</p>
-        <div class="scenarios" id="scenarios"></div>
+      <div class="tab-panel active card" id="panel-scenarios">
+        <div class="scenario-grid" id="scenarios"></div>
         <div id="scenario-gate" hidden></div>
-      </section>
-
-      <section class="panel" id="bookkeeping-section">
-        <h2 class="section-title">Fix your records</h2>
-        <p class="hint" style="margin-bottom:0.75rem">We matched bank charges to categories. Confirm so your spending picture stays accurate.</p>
+      </div>
+      <div class="tab-panel card" id="panel-portfolio">
+        <p id="portfolio-summary" class="empty" style="margin-top:0"></p>
+        <div id="holdings"></div>
+      </div>
+      <div class="tab-panel card" id="panel-records">
         <div id="bookkeeping"></div>
         <div id="recon-gate" hidden></div>
-      </section>
-
-      <section class="panel" id="watch-section">
-        <h2 class="section-title">Watch out for</h2>
-        <div id="watch-outs"></div>
-      </section>
-
-      <section class="panel" id="insights-section">
-        <h2 class="section-title">Extra context for your situation</h2>
-        <ul class="insights" id="insights"></ul>
-      </section>
+      </div>
+      <div class="tab-panel card" id="panel-behind">
+        <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Council debate</h3>
+        <ul id="council-debate" style="padding:0;margin:0 0 1rem"></ul>
+        <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Research & context</h3>
+        <ul id="research" style="padding-left:1rem;color:var(--muted);font-size:0.85rem"></ul>
+        <ul id="insights" style="padding-left:1rem;color:var(--muted);font-size:0.85rem;margin-top:0.75rem"></ul>
+        <div id="watch-outs" style="margin-top:1rem"></div>
+      </div>
     </div>
-  </main>
+  </div>
 
   <script>
     let currentRunId = null;
     let currentState = null;
     let refreshTimer = null;
-    let appConfig = {};
+    const chartAnimators = [];
 
     async function api(path, options = {}) {
-      const res = await fetch(path, {
-        headers: { "Content-Type": "application/json" },
-        ...options,
-      });
+      const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
       if (!res.ok) throw new Error(await res.text() || res.statusText);
       return res.json();
     }
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    function esc(v) {
+      return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
 
-    function priorityBadge(priority, done) {
-      if (done) return '<span class="badge badge-done">Done</span>';
-      if (priority === "now") return '<span class="badge badge-now">Do first</span>';
-      if (priority === "soon") return '<span class="badge badge-soon">When you can</span>';
-      return '<span class="badge badge-consider">Think about</span>';
+    function plain(text) {
+      return String(text || "")
+        .replace(/^Kronos[:\s-]*/i, "")
+        .replace(/^MiroFish[:\s-]*/i, "")
+        .replace(/Kronos-style/gi, "Statistical")
+        .trim();
+    }
+
+    function actionLabel(a) {
+      return { buy: "Buy", hold: "Hold", reduce: "Trim", allocate_cash: "Save cash" }[a] || a;
+    }
+
+    function signalLabel(agreement) {
+      if (agreement === "mixed") return { text: "Mixed", cls: "signal-mixed" };
+      if (agreement === "narrative_only") return { text: "Scenario only", cls: "signal-narrative" };
+      return { text: "Aligned", cls: "signal-aligned" };
+    }
+
+    /* ── Canvas forecast charts (reliable animation) ── */
+    function mountChart(container, values, direction, symbol) {
+      if (!values || values.length < 2) {
+        container.innerHTML = '<p class="empty">No chart data</p>';
+        return;
+      }
+      const id = "c-" + Math.random().toString(36).slice(2, 8);
+      container.innerHTML =
+        '<div class="chart-box" data-chart="' + id + '">' +
+        '<canvas aria-label="' + esc(symbol) + ' forecast"></canvas>' +
+        '<div class="chart-tip"></div></div>';
+      const box = container.querySelector(".chart-box");
+      const canvas = box.querySelector("canvas");
+      const tip = box.querySelector(".chart-tip");
+      const color = direction === "up" ? "#34d399" : direction === "down" ? "#f87171" : "#8b9cb3";
+      const split = Math.ceil(values.length / 2);
+
+      function draw(progress) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = box.getBoundingClientRect();
+        const w = Math.max(1, rect.width);
+        const h = Math.max(1, rect.height);
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const pad = 6;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+        const pts = values.map((v, i) => ({
+          x: pad + (i / (values.length - 1)) * (w - pad * 2),
+          y: pad + (h - pad * 2) - ((v - min) / range) * (h - pad * 2),
+          v,
+        }));
+        const visible = Math.max(2, Math.floor(pts.length * progress));
+
+        // fill
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, "rgba(56,189,248,0.25)");
+        grad.addColorStop(1, "rgba(56,189,248,0)");
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, h - pad);
+        for (let i = 0; i < visible; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.lineTo(pts[visible - 1].x, h - pad);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // history line
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        const histEnd = Math.min(visible, split);
+        for (let i = 1; i < histEnd; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // projected line
+        if (visible > split - 1) {
+          ctx.beginPath();
+          ctx.moveTo(pts[split - 1].x, pts[split - 1].y);
+          for (let i = split; i < visible; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.strokeStyle = color;
+          ctx.setLineDash([5, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // pulse dot
+        if (visible > 1) {
+          const last = pts[visible - 1];
+          ctx.beginPath();
+          ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+
+        box._pts = pts;
+      }
+
+      let start = null;
+      function animate(ts) {
+        if (!start) start = ts;
+        const progress = Math.min(1, (ts - start) / 1400);
+        draw(progress);
+        if (progress < 1) {
+          const id = requestAnimationFrame(animate);
+          chartAnimators.push(id);
+        }
+      }
+      requestAnimationFrame(animate);
+
+      canvas.addEventListener("mousemove", (e) => {
+        const pts = box._pts;
+        if (!pts) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        let best = pts[0];
+        let dist = Infinity;
+        pts.forEach(p => {
+          const d = Math.abs(p.x - x);
+          if (d < dist) { dist = d; best = p; }
+        });
+        tip.textContent = "$" + Number(best.v).toFixed(2);
+        tip.style.left = Math.min(rect.width - 56, Math.max(4, best.x - 20)) + "px";
+        tip.classList.add("show");
+      });
+      canvas.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    }
+
+    function renderForecasts(brief, state) {
+      const forecasts = brief.kronos_forecasts || state.kronos_forecasts || [];
+      const rail = document.getElementById("forecast-rail");
+      const list = document.getElementById("forecasts");
+      const chip = document.getElementById("signal-chip");
+      rail.hidden = forecasts.length === 0;
+      if (!forecasts.length) return;
+
+      const sig = signalLabel(brief.signal_agreement || state.signal_agreement || "aligned");
+      chip.hidden = false;
+      chip.className = "signal-chip " + sig.cls;
+      chip.textContent = sig.text;
+
+      list.innerHTML = forecasts.map((f, i) => {
+        const pctCls = f.direction === "up" ? "up" : f.direction === "down" ? "down" : "flat";
+        return (
+          '<div class="forecast-item">' +
+          '<div class="forecast-top"><span class="sym">' + esc(f.symbol) + '</span>' +
+          '<span class="pct ' + pctCls + '">' + esc(f.return_pct) + '% / ' + esc(f.horizon_days) + 'd</span></div>' +
+          '<div class="chart-slot" id="chart-' + i + '"></div>' +
+          '<div class="forecast-caption">' + esc(plain(f.citation)) + '</div></div>'
+        );
+      }).join("");
+
+      forecasts.forEach((f, i) => {
+        mountChart(document.getElementById("chart-" + i), f.sparkline || [], f.direction, f.symbol);
+      });
+    }
+
+    function renderVerdict(brief) {
+      document.getElementById("verdict").innerHTML =
+        "<h3>" + esc(brief.headline) + "</h3>" +
+        '<p class="lead">' + esc(brief.intro) + "</p>" +
+        (brief.direct_answer
+          ? '<div class="direct"><strong>Direct answer</strong>' + esc(brief.direct_answer) + "</div>"
+          : "") +
+        '<div class="bottom"><strong>Bottom line:</strong> ' + esc(brief.bottom_line) + "</div>";
+    }
+
+    function renderMoves(brief, state) {
+      const moves = brief.suggested_moves || state.suggested_moves || [];
+      document.getElementById("moves-block").hidden = moves.length === 0;
+      const factory = state.simulation_factory || {};
+      const banner = document.getElementById("sim-banner");
+      if (state.status === "simulation_running" || factory.status === "running") {
+        banner.hidden = false;
+        banner.className = "sim-banner running";
+        banner.textContent = factory.message || "Building scenario simulation…";
+      } else if (factory.message) {
+        banner.hidden = false;
+        banner.className = "sim-banner";
+        banner.textContent = factory.message;
+      } else {
+        banner.hidden = true;
+      }
+
+      document.getElementById("suggested-moves").innerHTML = moves.map(m =>
+        '<div class="move"><div class="move-top"><div><div class="move-kicker">' +
+        esc(m.symbol) + " · " + esc(actionLabel(m.action)) + '</div><h4>' + esc(m.title) +
+        '</h4></div><span class="signal-chip ' + (m.signal_agreement === "mixed" ? "signal-mixed" : "signal-aligned") + '">' +
+        Math.round(Number(m.confidence || 0) * 100) + '%</span></div><p>' + esc(m.rationale) + '</p>' +
+        (m.amount_usd != null ? '<div class="move-meta"><span>$' + Number(m.amount_usd).toLocaleString() + "</span></div>" : "") +
+        "</div>"
+      ).join("");
+      renderGate("moves-gate", "investment_moves", "Save these moves?", "Save", "Skip");
+    }
+
+    function renderActions(brief) {
+      document.getElementById("actions").innerHTML = (brief.action_items || []).map(item => {
+        const done = item.gate_kind && gateApproved(item.gate_kind);
+        const pri = done ? "done" : (item.priority || "consider");
+        return '<div class="action"><span class="action-dot ' + pri + '"></span><div><strong>' +
+          esc(item.title) + "</strong><span>" + esc(item.detail) + "</span></div></div>";
+      }).join("") || '<p class="empty">No actions yet.</p>';
     }
 
     function gateApproved(kind) {
+      const g = currentState?.human_gates?.find(x => x.kind === kind);
+      return g && g.approved !== null;
+    }
+
+    function renderGate(id, kind, title, ok, no) {
+      const el = document.getElementById(id);
       const gate = currentState?.human_gates?.find(g => g.kind === kind);
-      return gate && gate.approved !== null;
-    }
-
-    function actionLabel(action) {
-      const labels = { buy: "Buy", hold: "Hold", reduce: "Trim", allocate_cash: "Save cash" };
-      return labels[action] || action;
-    }
-
-    function confidenceLabel(value) {
-      const pct = Math.round(Number(value || 0) * 100);
-      if (pct >= 75) return "High confidence";
-      if (pct >= 60) return "Moderate confidence";
-      return "Lower confidence";
-    }
-
-    function renderKeysBanner(keys) {
-      const el = document.getElementById("keys-banner");
-      if (!keys) { el.hidden = true; return; }
+      if (!gate || gate.approved !== null) {
+        el.hidden = true;
+        if (gate?.approved === true) {
+          el.hidden = false;
+          el.className = "gate done";
+          el.innerHTML = "<strong>Saved</strong> — " + esc(title);
+        }
+        return;
+      }
       el.hidden = false;
-      if (keys.valid) {
-        el.className = "keys-banner ok";
-        el.innerHTML = "<strong>Live simulation ready</strong> — LLM and Zep keys are configured. New questions can spawn fresh MiroFish runs (may take several minutes).";
-      } else {
-        el.className = "keys-banner warn";
-        el.innerHTML = "<strong>Demo mode</strong> — Add real <code>LLM_API_KEY</code> and <code>ZEP_API_KEY</code> to <code>.env</code>, then run <code>python3 scripts/configure_keys.py</code>. Until then we use the seeded demo simulation.";
-      }
+      el.className = "gate";
+      el.innerHTML = "<strong>" + esc(title) + "</strong><p style='margin:0.35rem 0 0;font-size:0.85rem;color:var(--muted)'>" +
+        esc(gate.summary) + "</p><div class='gate-btns'>" +
+        "<button class='btn-ok' data-gate='" + kind + "' data-ok='1'>" + esc(ok) + "</button>" +
+        "<button class='btn-ghost' data-gate='" + kind + "' data-ok='0'>" + esc(no) + "</button></div>";
+      el.querySelectorAll("[data-gate]").forEach(btn => {
+        btn.onclick = () => approveGate(kind, btn.dataset.ok === "1");
+      });
     }
 
-    function renderSimulationStatus(state) {
-      const el = document.getElementById("sim-status");
-      const factory = state.simulation_factory || {};
-      if (state.status === "simulation_running" || factory.status === "running") {
-        el.hidden = false;
-        el.textContent = factory.message || "Building your MiroFish simulation — suggested moves will refresh when it finishes.";
-        return;
-      }
-      if (factory.status === "fixture") {
-        el.hidden = false;
-        el.textContent = factory.message || "Using demo simulation.";
-        return;
-      }
-      if (factory.status === "ready" || factory.status === "cached") {
-        el.hidden = false;
-        el.textContent = factory.message || ("Simulation " + (factory.simulation_id || state.simulation_id) + " ready.");
-        return;
-      }
-      el.hidden = true;
-    }
-
-    function signalBadgeLabel(agreement) {
-      if (agreement === "mixed") return { text: "Mixed signals", cls: "signal-mixed" };
-      if (agreement === "narrative_only") return { text: "Narrative only", cls: "signal-narrative" };
-      return { text: "Signals aligned", cls: "signal-aligned" };
-    }
-
-    function renderForecasts(state, brief) {
-      const forecasts = brief.kronos_forecasts || state.kronos_forecasts || [];
-      const section = document.getElementById("forecasts-section");
-      const badge = document.getElementById("signal-badge");
-      const agreement = brief.signal_agreement || state.signal_agreement || "aligned";
-      const sig = signalBadgeLabel(agreement);
-      badge.hidden = false;
-      badge.className = "signal-badge " + sig.cls;
-      badge.textContent = sig.text;
-      section.hidden = forecasts.length === 0;
-      document.getElementById("forecasts").innerHTML = forecasts.map(f => {
-        const dirClass = f.direction === "up" ? "dir-up" : f.direction === "down" ? "dir-down" : "dir-flat";
-        const spark = f.sparkline || [];
-        const max = Math.max(...spark, 1);
-        const bars = spark.map(v =>
-          '<span style="height:' + Math.max(8, Math.round((v / max) * 100)) + '%"></span>'
-        ).join("");
-        return '<article class="forecast-card"><div class="sym">' + escapeHtml(f.symbol) +
-          '</div><div class="' + dirClass + '" style="font-weight:700;margin:0.25rem 0">' +
-          escapeHtml(String(f.direction).toUpperCase()) + " · " + escapeHtml(String(f.return_pct)) + "% / " +
-          escapeHtml(String(f.horizon_days)) + "d</div><div class=\"hint\" style=\"margin:0\">" +
-          escapeHtml(f.citation) + '</div><div class="sparkline">' + bars + "</div></article>";
-      }).join("");
-    }
-
-    function renderCouncilDebate(state, brief) {
-      const lines = brief.council_debate || state.council_debate || [];
-      const section = document.getElementById("debate-section");
-      section.hidden = lines.length === 0;
-      document.getElementById("council-debate").innerHTML = lines.map(line =>
-        '<li class="debate-item">' + escapeHtml(line) + "</li>"
+    function renderTabs(brief) {
+      document.getElementById("scenarios").innerHTML = (brief.scenarios || []).map(s =>
+        '<article class="scenario"><div class="lbl">' + esc(s.label) + '</div><h4>' + esc(s.headline) +
+        "</h4><p>" + esc(s.explanation) + "</p></article>"
       ).join("");
+      document.getElementById("portfolio-summary").textContent = brief.portfolio_summary || "";
+      document.getElementById("holdings").innerHTML = (brief.holdings || []).map(h =>
+        '<div class="holding"><div><strong>' + esc(h.symbol) + '</strong><div style="font-size:0.8rem;color:var(--muted)">' +
+        esc(h.name) + '</div></div><div style="text-align:right;font-size:0.85rem">' + esc(h.quantity) +
+        " sh · " + esc(h.cost_label) + "</div></div>"
+      ).join("") || '<p class="empty">No holdings.</p>';
+
+      const book = brief.bookkeeping || [];
+      document.getElementById("bookkeeping").innerHTML = book.length
+        ? book.map(b => '<div class="holding"><div><strong>' + esc(b.description) + '</strong><div style="font-size:0.8rem;color:var(--muted)">' +
+          esc(b.category_label) + '</div></div><div>' + esc(b.amount_label) + "</div></div>").join("")
+        : '<p class="empty">No unmatched charges.</p>';
+
+      const debate = brief.council_debate || [];
+      document.getElementById("council-debate").innerHTML = debate.map(d => "<li class='debate'>" + esc(plain(d)) + "</li>").join("") ||
+        "<li class='debate empty'>No debate notes.</li>";
+
+      const research = brief.research_plain || [];
+      document.getElementById("research").innerHTML = research.map(r => "<li>" + esc(r) + "</li>").join("");
+      const insights = brief.insights_plain || [];
+      document.getElementById("insights").innerHTML = insights.map(i => "<li>" + esc(i) + "</li>").join("");
+      const watches = brief.watch_outs || [];
+      document.getElementById("watch-outs").innerHTML = watches.map(w =>
+        '<div class="gate" style="margin-bottom:0.5rem"><strong>' + esc(w.title) + "</strong><p style='margin:0.35rem 0 0;font-size:0.85rem;color:var(--muted)'>" +
+        esc(w.detail) + "</p></div>"
+      ).join("");
+
+      renderGate("recon-gate", "reconciliation", "Save categories?", "Yes", "Not yet");
+      renderGate("scenario-gate", "scenario_brief", "Save scenario summary?", "Yes", "Skip");
     }
 
-    function renderSuggestedMoves(state, brief) {
-      const moves = brief.suggested_moves || state.suggested_moves || [];
-      const section = document.getElementById("moves-section");
-      section.hidden = moves.length === 0;
-      renderSimulationStatus(state);
-      document.getElementById("suggested-moves").innerHTML = moves.map(move => {
-        const amount = move.amount_usd != null
-          ? '<span>$' + Number(move.amount_usd).toLocaleString() + "</span>"
-          : "";
-        const alloc = move.allocation_pct != null
-          ? "<span>" + Number(move.allocation_pct).toFixed(0) + "% of new money</span>"
-          : "";
-        const mixed = move.signal_agreement === "mixed"
-          ? '<span class="signal-badge signal-mixed">Mixed signals</span> '
-          : "";
-        const kronos = move.kronos_citation
-          ? '<div class="move-citation kronos"><strong>Kronos:</strong> ' + escapeHtml(move.kronos_citation) + "</div>"
-          : "";
-        const miro = move.simulation_citation
-          ? '<div class="move-citation mirofish"><strong>MiroFish:</strong> ' + escapeHtml(move.simulation_citation) + "</div>"
-          : "";
-        return '<article class="move-card"><div class="move-head"><div><div class="move-symbol">' +
-          escapeHtml(move.symbol) + " · " + escapeHtml(actionLabel(move.action)) +
-          '</div><h3 class="move-title">' + escapeHtml(move.title) +
-          '</h3></div><div>' + mixed + '<span class="badge badge-consider">' +
-          escapeHtml(confidenceLabel(move.confidence)) + " · " +
-          Math.round(Number(move.confidence || 0) * 100) + "%" +
-          '</span></div></div><p class="hint" style="margin:0">' + escapeHtml(move.rationale) +
-          '</p><div class="move-meta">' + amount + alloc +
-          "</div>" + kronos + miro + "</article>";
-      }).join("");
-      renderGate(
-        "moves-gate",
-        "investment_moves",
-        "Save these suggested moves?",
-        "Yes, save to my decision log",
-        "Skip for now"
-      );
+    function buildBrief(state) {
+      const brief = { ...(state.friendly_brief || {}) };
+      const topic = state.topic_analysis || {};
+      if (!brief.headline) brief.headline = (topic.topic_label || "Analysis") + ": what we found";
+      if (!brief.intro) brief.intro = 'You asked: "' + state.user_question + '"';
+      if (!brief.direct_answer) brief.direct_answer = topic.direct_answer || "";
+      if (!brief.bottom_line) brief.bottom_line = "Start with suggested moves, then next steps.";
+      if (!brief.kronos_forecasts?.length && state.kronos_forecasts?.length) brief.kronos_forecasts = state.kronos_forecasts;
+      if (!brief.suggested_moves?.length && state.suggested_moves?.length) brief.suggested_moves = state.suggested_moves;
+      if (!brief.council_debate?.length && state.council_debate?.length) brief.council_debate = state.council_debate;
+      if (!brief.signal_agreement) brief.signal_agreement = state.signal_agreement;
+      if (!brief.scenarios?.length && state.scenario_brief) {
+        brief.scenarios = [
+          { label: "Most likely", headline: "Base", explanation: state.scenario_brief.base },
+          { label: "Best case", headline: "Upside", explanation: state.scenario_brief.upside },
+          { label: "Worst case", headline: "Downside", explanation: state.scenario_brief.downside },
+        ];
+      }
+      if (!brief.holdings?.length && state.portfolio_snapshot?.holdings) {
+        brief.holdings = state.portfolio_snapshot.holdings.map(h => ({
+          symbol: h.symbol, name: h.symbol, quantity: h.quantity,
+          cost_label: "$" + Number(h.cost_basis || 0).toLocaleString(),
+        }));
+      }
+      return brief;
+    }
+
+    function renderResults(state) {
+      chartAnimators.forEach(id => cancelAnimationFrame(id));
+      chartAnimators.length = 0;
+      currentState = state;
+      const brief = buildBrief(state);
+      document.getElementById("results").hidden = false;
+      renderVerdict(brief);
+      renderForecasts(brief, state);
+      renderMoves(brief, state);
+      renderActions(brief);
+      renderTabs(brief);
+      scheduleRefresh(state);
     }
 
     function scheduleRefresh(state) {
-      if (refreshTimer) {
-        clearInterval(refreshTimer);
-        refreshTimer = null;
-      }
+      if (refreshTimer) clearInterval(refreshTimer);
       if (state.status !== "simulation_running" || !currentRunId) return;
       refreshTimer = setInterval(async () => {
         try {
           const updated = await api("/council/run/" + currentRunId + "/refresh", { method: "POST" });
           renderResults(updated);
-          if (updated.status !== "simulation_running" && refreshTimer) {
-            clearInterval(refreshTimer);
-            refreshTimer = null;
-          }
-        } catch (err) {
-          console.warn("refresh failed", err);
-        }
+          if (updated.status !== "simulation_running") clearInterval(refreshTimer);
+        } catch (e) { console.warn(e); }
       }, 8000);
-    }
-
-    function buildBriefFromState(state) {
-      const brief = { ...(state.friendly_brief || {}) };
-      const topic = state.topic_analysis || {};
-
-      if (!brief.headline) {
-        brief.headline = (topic.topic_label || "Your question") + ": what we found";
-      }
-      if (!brief.intro) {
-        brief.intro = 'You asked: "' + state.user_question + '". Here is a plain-English summary and next steps.';
-      }
-      if (!brief.direct_answer) {
-        brief.direct_answer = topic.direct_answer || "Review the scenarios and action list below for practical next steps.";
-      }
-      if (!brief.bottom_line) {
-        brief.bottom_line = "Take your time — start with items marked Do first.";
-      }
-      if (!brief.portfolio_summary && state.portfolio_snapshot) {
-        const h = state.portfolio_snapshot.holdings || [];
-        brief.portfolio_summary = "You have " + h.length + " holding(s) on file.";
-      }
-      if ((!brief.holdings || brief.holdings.length === 0) && state.portfolio_snapshot?.holdings) {
-        brief.holdings = state.portfolio_snapshot.holdings.map(h => ({
-          symbol: h.symbol,
-          name: h.symbol,
-          quantity: h.quantity,
-          cost_label: "$" + Number(h.cost_basis || 0).toLocaleString(),
-          account: h.account || "default",
-        }));
-      }
-      if ((!brief.scenarios || brief.scenarios.length === 0) && state.scenario_brief) {
-        brief.scenarios = [
-          { key: "base", label: "Most likely", headline: "Base case", explanation: state.scenario_brief.base, what_you_might_do: "Review and decide if this fits your timeline." },
-          { key: "upside", label: "Best case", headline: "Upside", explanation: state.scenario_brief.upside, what_you_might_do: "Plan calmly if things go well." },
-          { key: "downside", label: "Worst case", headline: "Downside", explanation: state.scenario_brief.downside, what_you_might_do: "Protect cash needs first." },
-        ];
-      }
-      if ((!brief.research_plain || brief.research_plain.length === 0) && state.research_notes?.length) {
-        brief.research_plain = state.research_notes;
-      }
-      if ((!brief.insights_plain || brief.insights_plain.length === 0) && state.simulation_insights?.length) {
-        brief.insights_plain = state.simulation_insights;
-      }
-      if (!brief.action_items || brief.action_items.length === 0) {
-        brief.action_items = [
-          { priority: "now", title: "Save this plan", detail: "Keep today's summary for later.", cta_label: "Save summary", gate_kind: "scenario_brief" },
-        ];
-      }
-      if ((!brief.suggested_moves || brief.suggested_moves.length === 0) && state.suggested_moves?.length) {
-        brief.suggested_moves = state.suggested_moves;
-      }
-      if ((!brief.kronos_forecasts || brief.kronos_forecasts.length === 0) && state.kronos_forecasts?.length) {
-        brief.kronos_forecasts = state.kronos_forecasts;
-      }
-      if ((!brief.council_debate || brief.council_debate.length === 0) && state.council_debate?.length) {
-        brief.council_debate = state.council_debate;
-      }
-      if (!brief.signal_agreement && state.signal_agreement) {
-        brief.signal_agreement = state.signal_agreement;
-      }
-      return brief;
-    }
-
-    function renderGate(containerId, kind, title, approveLabel, rejectLabel) {
-      const el = document.getElementById(containerId);
-      const gate = currentState?.human_gates?.find(g => g.kind === kind);
-      if (!gate || gate.approved !== null) {
-        el.hidden = true;
-        if (gate && gate.approved === true) {
-          el.hidden = false;
-          el.className = "gate-box done";
-          el.innerHTML = "<strong>Done</strong> — " + escapeHtml(title);
-        }
-        return;
-      }
-      el.hidden = false;
-      el.className = "gate-box";
-      el.innerHTML =
-        "<strong>" + escapeHtml(title) + "</strong>" +
-        '<p class="hint" style="margin:0.5rem 0 0.75rem">' + escapeHtml(gate.summary) + "</p>" +
-        '<div class="action-btns">' +
-        '<button class="btn-ok" data-gate="' + kind + '" data-approved="true">' + escapeHtml(approveLabel) + "</button>" +
-        '<button class="btn-ghost" data-gate="' + kind + '" data-approved="false">' + escapeHtml(rejectLabel) + "</button>" +
-        "</div>";
-      el.querySelectorAll("[data-gate]").forEach(btn => {
-        btn.onclick = () => approveGate(kind, btn.dataset.approved === "true");
-      });
-    }
-
-    function renderResults(state) {
-      currentState = state;
-      const brief = buildBriefFromState(state);
-      const results = document.getElementById("results");
-      results.hidden = false;
-      results.style.display = "block";
-
-      document.getElementById("hero").innerHTML =
-        "<h2>" + escapeHtml(brief.headline) + "</h2>" +
-        "<p>" + escapeHtml(brief.intro) + "</p>" +
-        (brief.direct_answer
-          ? '<div class="direct-answer"><strong>Direct answer</strong>' + escapeHtml(brief.direct_answer) + "</div>"
-          : "") +
-        '<div class="bottom-line"><strong>Bottom line:</strong> ' + escapeHtml(brief.bottom_line) + "</div>";
-
-      renderSuggestedMoves(state, brief);
-      renderForecasts(state, brief);
-      renderCouncilDebate(state, brief);
-
-      document.getElementById("portfolio-summary").textContent = brief.portfolio_summary || "";
-
-      document.getElementById("holdings").innerHTML = (brief.holdings || []).map(h =>
-        '<div class="holding"><div><div class="sym">' + escapeHtml(h.symbol) + '</div><div class="name">' +
-        escapeHtml(h.name) + '</div></div><div style="text-align:right"><div>' + escapeHtml(h.quantity) +
-        ' shares</div><div class="name">Paid ~' + escapeHtml(h.cost_label) + '</div></div><div class="meta">Account: ' +
-        escapeHtml(h.account) + "</div></div>"
-      ).join("") || '<p class="empty">No holdings on file yet.</p>';
-
-      document.getElementById("actions").innerHTML = (brief.action_items || []).map(item => {
-        const done = item.gate_kind ? gateApproved(item.gate_kind) : false;
-        const scrollTarget = item.gate_kind === "reconciliation" ? "recon-gate" : "scenario-gate";
-        const btns = item.gate_kind && !done
-          ? '<div class="action-btns"><button class="btn-ok" type="button" data-scroll="' + scrollTarget + '">' +
-            escapeHtml(item.cta_label || "Review") + "</button></div>"
-          : "";
-        return '<li class="action-item' + (done ? " done" : "") + '"><div class="action-head"><strong>' +
-          escapeHtml(item.title) + "</strong>" + priorityBadge(item.priority, done) +
-          '</div><p class="hint" style="margin:0">' + escapeHtml(item.detail) + "</p>" + btns + "</li>";
-      }).join("");
-
-      document.querySelectorAll("[data-scroll]").forEach(btn => {
-        btn.onclick = () => document.getElementById(btn.dataset.scroll).scrollIntoView({ behavior: "smooth" });
-      });
-
-      const research = brief.research_plain || [];
-      document.getElementById("research-section").hidden = research.length === 0;
-      document.getElementById("research").innerHTML = research.map(r => "<li>" + escapeHtml(r) + "</li>").join("");
-
-      document.getElementById("scenarios").innerHTML = (brief.scenarios || []).map(s =>
-        '<article class="scenario ' + escapeHtml(s.key) + '"><div class="tag">' + escapeHtml(s.label) +
-        "</div><h3>" + escapeHtml(s.headline) + "</h3><p>" + escapeHtml(s.explanation) +
-        '</p><div class="do"><strong>What you might do</strong>' + escapeHtml(s.what_you_might_do) + "</div></article>"
-      ).join("");
-
-      const book = brief.bookkeeping || [];
-      document.getElementById("bookkeeping-section").hidden = book.length === 0;
-      document.getElementById("bookkeeping").innerHTML = book.map(b =>
-        '<div class="book-item"><div class="row"><div><strong>' + escapeHtml(b.description) +
-        '</strong><div class="hint">' + escapeHtml(b.date) + " · " + escapeHtml(b.category_label) +
-        '</div></div><div class="amount">' + escapeHtml(b.amount_label) +
-        '</div></div><div class="why"><em>' + escapeHtml(b.confidence_label) + "</em> — " +
-        escapeHtml(b.why) + "</div></div>"
-      ).join("");
-
-      const watches = brief.watch_outs || [];
-      document.getElementById("watch-section").hidden = watches.length === 0;
-      document.getElementById("watch-outs").innerHTML = watches.map(w =>
-        '<div class="watch ' + escapeHtml(w.severity) + '"><strong>' + escapeHtml(w.title) +
-        "</strong><div>" + escapeHtml(w.detail) + '</div><div class="suggestion"><strong>Suggestion:</strong> ' +
-        escapeHtml(w.suggestion) + "</div></div>"
-      ).join("");
-
-      const insights = brief.insights_plain || [];
-      document.getElementById("insights-section").hidden = insights.length === 0;
-      document.getElementById("insights").innerHTML = insights.map(i => "<li>" + escapeHtml(i) + "</li>").join("");
-
-      renderGate("recon-gate", "reconciliation", "Ready to save these categories?", "Yes, update my records", "Not yet");
-      renderGate("scenario-gate", "scenario_brief", "Save this scenario summary?", "Yes, save for later", "Skip for now");
-      scheduleRefresh(state);
     }
 
     async function runCouncil() {
       const btn = document.getElementById("run-btn");
       const status = document.getElementById("status");
       btn.disabled = true;
-      status.textContent = "Analyzing your question…";
+      status.textContent = "Running council analysis…";
       try {
         const state = await api("/council/run", {
           method: "POST",
@@ -749,15 +673,10 @@
         });
         currentRunId = state.run_id;
         renderResults(state);
-        status.textContent = state.status === "simulation_running"
-          ? "Live simulation running — suggested moves will update automatically."
-          : state.status === "completed"
-          ? "All set — you've worked through today's action items."
-          : "Scroll down for suggested moves and your action list.";
-        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+        status.textContent = "Done — forecasts animate on the right.";
+        document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (err) {
         status.textContent = "Error: " + err.message;
-        console.error(err);
       } finally {
         btn.disabled = false;
       }
@@ -765,33 +684,31 @@
 
     async function approveGate(kind, approved) {
       if (!currentRunId) return;
-      const status = document.getElementById("status");
-      try {
-        const state = await api("/council/run/" + currentRunId + "/approve", {
-          method: "POST",
-          body: JSON.stringify({ gate_kind: kind, approved }),
-        });
-        renderResults(state);
-        status.textContent = state.status === "completed"
-          ? "Nice work — your records and scenario notes are saved."
-          : "One step down. Check what's left on your action list.";
-      } catch (err) {
-        status.textContent = "Error: " + err.message;
-        console.error(err);
-      }
+      const state = await api("/council/run/" + currentRunId + "/approve", {
+        method: "POST",
+        body: JSON.stringify({ gate_kind: kind, approved }),
+      });
+      renderResults(state);
     }
 
     document.getElementById("run-btn").addEventListener("click", runCouncil);
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+      });
+    });
 
     api("/config").then(cfg => {
-      appConfig = cfg;
-      if (cfg.default_simulation_id) {
-        document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
+      const pill = document.getElementById("status-pill");
+      if (cfg.keys?.valid) {
+        pill.textContent = "Live";
+        pill.className = "status-pill live";
       }
-      if (cfg.default_cash_to_deploy) {
-        document.getElementById("cash").value = cfg.default_cash_to_deploy;
-      }
-      renderKeysBanner(cfg.keys);
+      if (cfg.default_simulation_id) document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
+      if (cfg.default_cash_to_deploy) document.getElementById("cash").value = cfg.default_cash_to_deploy;
     }).catch(() => {});
   </script>
 </body>

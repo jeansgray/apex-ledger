@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Apex Ledger — Collaborator onboarding</title>
   <meta name="description" content="Personal investor platform: MiroFish scenario council + ledger reconciliation.">
+  <link rel="icon" href="assets/apex-logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="wrap">
     <header>
-      <span class="badge">Personal investor · not institutional</span>
-      <h1>Apex Ledger</h1>
-      <p class="tagline">Scenario council backed by MiroFish simulations, plus ledger reconciliation with human approval gates.</p>
+      <div class="brand-row">
+        <img src="assets/apex-logo.svg" alt="" class="brand-logo" width="56" height="56" />
+        <div>
+          <span class="badge">Personal investor · not institutional</span>
+          <h1>Apex Ledger</h1>
+          <p class="tagline">Scenario council + quant forecasts + ledger reconciliation — human approval at every gate.</p>
+        </div>
+      </div>
       <nav class="toc" aria-label="On this page">
         <a href="#repos">Repositories</a>
         <a href="#prerequisites">Prerequisites</a>
@@ -144,7 +150,7 @@ UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend pyth
       <h2>Docker Compose</h2>
       <p>From the repo root (requires submodule + <code>.env</code>):</p>
       <pre><code>docker compose up --build</code></pre>
-      <p>Apex: <code>http://127.0.0.1:8080</code> · MiroFish: <code>http://127.0.0.1:5001</code></p>
+      <p>Apex UI: <code>http://127.0.0.1:8080</code> · MiroFish: <code>:5001</code> · Kronos forecasts: <code>:5002</code></p>
       <p>Install Docker Desktop (macOS): <a href="https://docs.docker.com/desktop/setup/install/mac-install/">Docker install guide</a>.</p>
     </section>
 
