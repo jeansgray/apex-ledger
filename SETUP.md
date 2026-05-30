@@ -161,7 +161,7 @@ python3 scripts/bootstrap_personal_investor_simulation.py
 - **GitLab CI (primary):** `.gitlab-ci.yml` runs `uv sync --extra dev && uv run pytest tests/ -q` on push/MR to `main`.
 - **GitHub repo:** https://github.com/jeansgray/apex-ledger  
 - **GitHub Actions CI:** `.github/workflows/ci.yml` — same pytest job as GitLab (mirror remote).
-- **Docs site:** `docs/` deploys via `.github/workflows/pages.yml`. The workflow enables Pages automatically; if deploy still fails, open **Settings → Pages** and confirm source is **GitHub Actions**. The published site is static onboarding only; the council UI still runs locally.
+- **Docs site:** `docs/` deploys via `.github/workflows/pages.yml`. **One-time setup:** GitHub repo **Settings → Pages → Build and deployment → Source: GitHub Actions**. Until that is enabled, the Pages workflow fails with “Get Pages site failed”. The published site is static onboarding only; the council UI still runs locally.
 
 ## 10. What's not wired yet
 

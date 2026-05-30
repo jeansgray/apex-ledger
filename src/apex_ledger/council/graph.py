@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from ..config import Settings
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
@@ -280,7 +282,7 @@ class CouncilOrchestrator:
             state.agent_outputs["scenario_cartographer"] = (
                 f"Pulled {len(insights)} insight(s) from {state.simulation_id}."
             )
-        except MiroFishError as exc:
+        except (MiroFishError, httpx.HTTPError) as exc:
             state.simulation_insights.append(f"MiroFish unavailable: {exc}")
 
     def _run_compliance_skeptic(self, state: CouncilRunState, topic: TopicAnalysis) -> None:
