@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apex Ledger — Collaborator onboarding</title>
+  <meta name="description" content="Personal investor platform: MiroFish scenario council + ledger reconciliation.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="badge">Personal investor · not institutional</span>
+      <h1>Apex Ledger</h1>
+      <p class="tagline">Scenario council backed by MiroFish simulations, plus ledger reconciliation with human approval gates.</p>
+      <nav class="toc" aria-label="On this page">
+        <a href="#repos">Repositories</a>
+        <a href="#prerequisites">Prerequisites</a>
+        <a href="#clone">Clone &amp; setup</a>
+        <a href="#keys">Demo vs live keys</a>
+        <a href="#run">Run locally</a>
+        <a href="#docker">Docker</a>
+        <a href="#boundary">AGPL boundary</a>
+      </nav>
+    </header>
+
+    <section id="repos">
+      <h2>Repositories</h2>
+      <p>Apex Ledger is developed on GitLab; GitHub mirrors CI and this static site.</p>
+      <div class="pill-row">
+        <a class="pill" href="https://gitlab.com/jeansgray/apex-ledger">GitLab — primary</a>
+        <a class="pill" href="https://github.com/jeansgray/apex-ledger">GitHub — mirror &amp; CI</a>
+        <a class="pill" href="https://github.com/666ghj/MiroFish">MiroFish (AGPL submodule)</a>
+      </div>
+    </section>
+
+    <section id="ui-note">
+      <div class="card warn">
+        <strong>Council UI runs on your machine, not on GitHub Pages.</strong>
+        <p>This site is onboarding documentation only. The FastAPI council UI (<code>http://127.0.0.1:8080</code>) and MiroFish backend (<code>:5001</code>) must be started locally, in a dev container, or via Docker Compose.</p>
+      </div>
+    </section>
+
+    <section id="prerequisites">
+      <h2>Prerequisites</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Version</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Git</td>
+              <td>recent</td>
+              <td>Clone repo + <code>vendor/mirofish</code> submodule</td>
+            </tr>
+            <tr>
+              <td><a href="https://docs.astral.sh/uv/">uv</a></td>
+              <td>latest</td>
+              <td>Python deps for Apex and MiroFish backend</td>
+            </tr>
+            <tr>
+              <td>Python</td>
+              <td>3.11+ (Apex), <strong>3.12</strong> (MiroFish)</td>
+              <td>MiroFish requires <code>&lt;3.13</code></td>
+            </tr>
+            <tr>
+              <td>Node.js</td>
+              <td>18+</td>
+              <td>Optional — MiroFish frontend tooling only</td>
+            </tr>
+            <tr>
+              <td>Docker Desktop</td>
+              <td>recent</td>
+              <td>Optional repeatable stack — see <a href="#docker">Docker</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="clone">
+      <h2>Clone &amp; first-time setup</h2>
+      <p>Always initialize the MiroFish submodule (AGPL, HTTP-only boundary):</p>
+      <pre><code>git clone --recurse-submodules https://gitlab.com/jeansgray/apex-ledger.git
+cd apex-ledger
+cp .env.example .env
+# Edit .env — never commit secrets
+python3 scripts/configure_keys.py   # syncs keys into MiroFish env files
+uv sync --extra dev
+python3 scripts/setup_mirofish.py --no-start</code></pre>
+      <p>GitHub mirror:</p>
+      <pre><code>git clone --recurse-submodules https://github.com/jeansgray/apex-ledger.git</code></pre>
+      <p>Full checklist: <a href="https://github.com/jeansgray/apex-ledger/blob/main/SETUP.md">SETUP.md</a> in the repo.</p>
+    </section>
+
+    <section id="keys">
+      <h2>Demo vs live API keys</h2>
+      <div class="pill-row">
+        <span class="pill demo">Demo — no keys required</span>
+        <span class="pill live">Live — LLM + Zep keys</span>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Keys</th>
+              <th>Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Demo</td>
+              <td>None</td>
+              <td>Uses seeded fixture <code>sim_apex_personal_investor</code> (read-only MiroFish APIs)</td>
+            </tr>
+            <tr>
+              <td>Live simulations</td>
+              <td><code>LLM_API_KEY</code>, <code>ZEP_API_KEY</code> in <code>.env</code></td>
+              <td>Background MiroFish runs (often 5–15 min). Get keys from <a href="https://platform.openai.com/api-keys">OpenAI</a> and <a href="https://app.getzep.com/">Zep Cloud</a>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>After adding keys, run <code>python3 scripts/configure_keys.py</code> and restart both services.</p>
+    </section>
+
+    <section id="run">
+      <h2>Run locally (two terminals)</h2>
+      <h3>Terminal 1 — MiroFish (port 5001)</h3>
+      <pre><code>uv python install 3.12
+UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend python run.py</code></pre>
+      <h3>Terminal 2 — Apex Ledger (port 8080)</h3>
+      <pre><code>uv run apex-ledger serve --port 8080</code></pre>
+      <p>Open <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a> for the council UI.</p>
+    </section>
+
+    <section id="docker">
+      <h2>Docker Compose</h2>
+      <p>From the repo root (requires submodule + <code>.env</code>):</p>
+      <pre><code>docker compose up --build</code></pre>
+      <p>Apex: <code>http://127.0.0.1:8080</code> · MiroFish: <code>http://127.0.0.1:5001</code></p>
+      <p>Install Docker Desktop (macOS): <a href="https://docs.docker.com/desktop/setup/install/mac-install/">Docker install guide</a>.</p>
+    </section>
+
+    <section id="boundary">
+      <h2>AGPL boundary</h2>
+      <p><code>vendor/mirofish</code> is AGPL-3.0. Do <strong>not</strong> import MiroFish Python code into <code>src/apex_ledger/</code>. Run MiroFish as a separate process and call it over HTTP via <code>MIROFISH_BASE_URL</code>.</p>
+    </section>
+
+    <footer>
+      <p>Apex Ledger — proprietary app + AGPL MiroFish service boundary. Documentation site only; interactive UI is local.</p>
+    </footer>
+  </div>
+</body>
+</html>

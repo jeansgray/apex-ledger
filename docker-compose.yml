@@ -1,0 +1,48 @@
+# Apex Ledger + MiroFish (AGPL HTTP boundary — separate containers).
+# Prerequisites: git submodule update --init, cp .env.example .env
+# Keys: mount via env_file (.env); never bake secrets into images.
+
+services:
+  mirofish:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mirofish
+    container_name: apex-mirofish
+    env_file:
+      - .env
+    environment:
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: "5001"
+      FLASK_DEBUG: "false"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./vendor/mirofish/backend/app/uploads:/app/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  apex:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.apex
+    container_name: apex-ledger
+    env_file:
+      - .env
+    environment:
+      MIROFISH_BASE_URL: http://mirofish:5001
+      APEX_DATA_DIR: /app/data
+      APEX_LEDGER_DB: /app/data/ledger.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./.cursor/skills:/app/.cursor/skills:ro
+    depends_on:
+      mirofish:
+        condition: service_healthy
+    restart: unless-stopped

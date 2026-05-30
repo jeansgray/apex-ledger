@@ -24,6 +24,27 @@ git submodule update --init --recursive
 | Python **3.11+** (Apex) | `uv python install 3.11` |
 | Python **3.12** (MiroFish) | `uv python install 3.12` |
 | Node **18+** (MiroFish tooling) | `node -v` |
+| **Docker Desktop** (optional) | `docker compose version` — [macOS install](https://docs.docker.com/desktop/setup/install/mac-install/) |
+
+### Docker Compose (recommended for collaborators)
+
+```bash
+git submodule update --init --recursive
+cp .env.example .env
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Apex Ledger UI | http://127.0.0.1:8080 |
+| MiroFish backend | http://127.0.0.1:5001 |
+
+- `.env` is mounted into containers via `env_file` — do not commit it.
+- Empty `LLM_API_KEY` / `ZEP_API_KEY` use demo placeholders in the MiroFish container; add real keys and run `python3 scripts/configure_keys.py` for live simulations.
+- `data/` is a bind mount so ledger state persists on the host.
+- MiroFish runs as a **separate AGPL service**; Apex talks to it over HTTP only (`MIROFISH_BASE_URL=http://mirofish:5001` inside Compose).
+
+Stop: `docker compose down`
 
 Add local bins to PATH in `~/.zshrc` if needed:
 
@@ -62,7 +83,14 @@ curl -s http://127.0.0.1:8080/health | python3 -m json.tool
 
 **Security:** Do not paste keys in chat, issues, or MRs. Rotate any key that was exposed.
 
-## 4. Run services
+## 4. Dev container (VS Code / Cursor)
+
+1. **Reopen in Container** (`.devcontainer/devcontainer.json`).
+2. `postCreate` installs uv, Python 3.11 + 3.12, syncs deps, initializes the submodule, and runs `setup_mirofish.py --no-start`.
+3. `postStart` launches MiroFish on **:5001** and Apex on **:8080** (logs in `/tmp/mirofish.log`, `/tmp/apex-ledger.log`).
+4. You still need a local `.env` with keys for **live** simulations — copy from `.env.example` and run `python3 scripts/configure_keys.py`.
+
+## 5. Run services (uv, two terminals)
 
 **Terminal 1 — MiroFish** (port 5001):
 
@@ -81,7 +109,7 @@ uv run apex-ledger serve --port 8080
 
 Open http://127.0.0.1:8080
 
-## 5. Cursor MCP (contributors)
+## 6. Cursor MCP (contributors)
 
 For GitLab issues, MRs, and CI from Cursor:
 
@@ -99,7 +127,7 @@ glab auth login --web
 glab auth status
 ```
 
-## 6. GitLab remote
+## 7. GitLab remote
 
 - **HTTPS:** `https://gitlab.com/jeansgray/apex-ledger.git`
 - **SSH:** `git@gitlab.com:jeansgray/apex-ledger.git`
@@ -110,7 +138,7 @@ Push after auth:
 git push -u origin main
 ```
 
-## 7. MiroFish submodule
+## 8. MiroFish submodule
 
 `vendor/mirofish` is an AGPL submodule — HTTP boundary only; do not import it from `src/apex_ledger/`.
 
@@ -128,7 +156,13 @@ Optional one-shot live bootstrap (long-running):
 python3 scripts/bootstrap_personal_investor_simulation.py
 ```
 
-## 8. What's not wired yet
+## 9. GitHub mirror & Pages
+
+- **Repo:** https://github.com/jeansgray/apex-ledger  
+- **CI:** `.github/workflows/ci.yml` runs `uv sync --extra dev && uv run pytest tests/ -q` on push/PR to `main`.  
+- **Docs site:** `docs/` deploys via `.github/workflows/pages.yml`. In GitHub **Settings → Pages**, set source to **GitHub Actions** (not “Deploy from branch”). The published site is static onboarding only; the council UI still runs locally.
+
+## 10. What's not wired yet
 
 - Real personal holdings / profile (demo ledger is seeded)
 - Production deployment / auth

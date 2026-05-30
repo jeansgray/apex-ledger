@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.git
+data/
+*.md
+!README.md
+vendor/mirofish/frontend/node_modules
+vendor/mirofish/frontend/dist

@@ -52,11 +52,21 @@ To plan issues, MRs, and pipelines from the editor:
 
 Details: [SETUP.md](SETUP.md) and [GITLAB_SETUP.md](GITLAB_SETUP.md).
 
-### GitLab access
+### Repository access
 
-- **Repo:** https://gitlab.com/jeansgray/apex-ledger
-- Clone with submodule: `git clone --recurse-submodules https://gitlab.com/jeansgray/apex-ledger.git`
-- Ask the owner for **Developer** access if the project is private.
+| Remote | URL |
+|--------|-----|
+| **GitLab** (primary) | https://gitlab.com/jeansgray/apex-ledger |
+| **GitHub** (mirror, CI, Pages docs) | https://github.com/jeansgray/apex-ledger |
+
+Clone with submodule:
+
+```bash
+git clone --recurse-submodules https://gitlab.com/jeansgray/apex-ledger.git
+# or: git clone --recurse-submodules https://github.com/jeansgray/apex-ledger.git
+```
+
+Ask the owner for **Developer** access if the project is private. Static onboarding site (not the council UI): GitHub Pages from `docs/` after enabling Pages in repo settings.
 
 ---
 
@@ -76,7 +86,23 @@ Details: [SETUP.md](SETUP.md) and [GITLAB_SETUP.md](GITLAB_SETUP.md).
 
 Do **not** import MiroFish Python modules into `src/apex_ledger/`. Run MiroFish as a separate service and call it over HTTP (`MIROFISH_BASE_URL`).
 
-## Quick start
+## Docker (repeatable collaborator path)
+
+Install [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) (or Linux/Windows equivalents), then from the repo root:
+
+```bash
+git submodule update --init --recursive
+cp .env.example .env
+# optional: add LLM_API_KEY / ZEP_API_KEY, then python3 scripts/configure_keys.py
+docker compose up --build
+```
+
+- Apex UI: http://127.0.0.1:8080  
+- MiroFish: http://127.0.0.1:5001  
+
+Secrets load from mounted `.env` only — never bake keys into images. See [SETUP.md](SETUP.md) for details.
+
+## Quick start (uv, local)
 
 ```bash
 cd ~/Projects/apex-ledger
@@ -134,8 +160,10 @@ Dataset: [SkillMD-138K](https://huggingface.co/datasets/FayeZC/SkillMD-138K) (CC
 
 ## Tooling & ops
 
-- [SETUP.md](SETUP.md) — full checklist (CLT, GitLab, MCP, MiroFish runtime)
+- [SETUP.md](SETUP.md) — full checklist (CLT, GitLab, MCP, MiroFish runtime, Docker)
 - [GITLAB_SETUP.md](GITLAB_SETUP.md) — GitLab token / MCP details
+- `.github/workflows/ci.yml` — pytest on push/PR to `main`
+- `.devcontainer/` — VS Code / Cursor dev container (ports 5001 + 8080)
 
 ## Tests
 
