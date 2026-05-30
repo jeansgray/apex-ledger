@@ -22,6 +22,14 @@ def main() -> None:
     sub.add_parser("council-roster", help="Print council roles and skills")
     sub.add_parser("seed-ledger", help="Seed demo portfolio and transactions")
 
+    import_parser = sub.add_parser("import-ledger", help="Import personal holdings from CSV")
+    import_parser.add_argument("csv_path", help="CSV: symbol, quantity, cost_basis, account")
+    import_parser.add_argument(
+        "--keep-transactions",
+        action="store_true",
+        help="Keep existing bank transactions when replacing holdings",
+    )
+
     serve_parser = sub.add_parser("serve", help="Start FastAPI server")
     serve_parser.add_argument("--host", default="127.0.0.1")
     serve_parser.add_argument("--port", type=int, default=8080)
@@ -46,6 +54,36 @@ def main() -> None:
     if args.command == "seed-ledger":
         orchestrator.ledger.seed_demo_data()
         print(json.dumps(orchestrator.ledger.portfolio_snapshot(), indent=2))
+        return
+
+    if args.command == "import-ledger":
+        import csv
+        from pathlib import Path
+
+        path = Path(args.csv_path)
+        if not path.is_file():
+            print(f"File not found: {path}", file=sys.stderr)
+            sys.exit(1)
+        rows: list[tuple[str, float, float | None, str]] = []
+        with path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            for raw in reader:
+                symbol = (raw.get("symbol") or "").strip().upper()
+                if not symbol:
+                    continue
+                quantity = float(raw["quantity"])
+                cost_raw = (raw.get("cost_basis") or "").strip()
+                cost_basis = float(cost_raw) if cost_raw else None
+                account = (raw.get("account") or "default").strip() or "default"
+                rows.append((symbol, quantity, cost_basis, account))
+        if not rows:
+            print("No holdings rows found", file=sys.stderr)
+            sys.exit(1)
+        if not args.keep_transactions:
+            orchestrator.ledger.clear_portfolio()
+        count = orchestrator.ledger.replace_holdings(rows)
+        snapshot = orchestrator.ledger.portfolio_snapshot()
+        print(json.dumps({"imported": count, "holdings": snapshot["holdings"]}, indent=2))
         return
 
     if args.command == "serve":

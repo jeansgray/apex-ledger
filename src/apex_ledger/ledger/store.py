@@ -71,26 +71,53 @@ class LedgerStore:
         with self.connection() as conn:
             if conn.execute("SELECT COUNT(*) FROM holdings").fetchone()[0]:
                 return
+            self._insert_demo_rows(conn)
+
+    @staticmethod
+    def _insert_demo_rows(conn: sqlite3.Connection) -> None:
+        conn.executemany(
+            "INSERT INTO holdings (symbol, quantity, cost_basis, account) VALUES (?, ?, ?, ?)",
+            [
+                ("VTI", 120.0, 28500.0, "brokerage"),
+                ("AAPL", 25.0, 4200.0, "brokerage"),
+                ("BND", 80.0, 6400.0, "brokerage"),
+            ],
+        )
+        conn.executemany(
+            """
+            INSERT INTO transactions
+            (posted_on, description, amount, account, category, status, memo)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                ("2026-05-01", "DIVIDEND VTI", 42.15, "brokerage", "dividend", "reconciled", None),
+                ("2026-05-12", "ADOBE *CREATIVE CLD", -59.99, "checking", None, "unmatched", None),
+                ("2026-05-18", "TRANSFER TO BROKERAGE", -500.0, "checking", None, "unmatched", None),
+            ],
+        )
+
+    def clear_portfolio(self) -> None:
+        with self.connection() as conn:
+            conn.execute("DELETE FROM holdings")
+            conn.execute("DELETE FROM transactions")
+
+    def replace_holdings(self, rows: list[tuple[str, float, float | None, str]]) -> int:
+        """Replace all holdings. Each row: symbol, quantity, cost_basis, account."""
+        with self.connection() as conn:
+            conn.execute("DELETE FROM holdings")
             conn.executemany(
                 "INSERT INTO holdings (symbol, quantity, cost_basis, account) VALUES (?, ?, ?, ?)",
-                [
-                    ("VTI", 120.0, 28500.0, "brokerage"),
-                    ("AAPL", 25.0, 4200.0, "brokerage"),
-                    ("BND", 80.0, 6400.0, "brokerage"),
-                ],
+                rows,
             )
-            conn.executemany(
-                """
-                INSERT INTO transactions
-                (posted_on, description, amount, account, category, status, memo)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    ("2026-05-01", "DIVIDEND VTI", 42.15, "brokerage", "dividend", "reconciled", None),
-                    ("2026-05-12", "ADOBE *CREATIVE CLD", -59.99, "checking", None, "unmatched", None),
-                    ("2026-05-18", "TRANSFER TO BROKERAGE", -500.0, "checking", None, "unmatched", None),
-                ],
-            )
+            return len(rows)
+
+    def is_demo_portfolio(self) -> bool:
+        holdings = self.list_holdings()
+        if len(holdings) != 3:
+            return False
+        demo = {("VTI", 120.0), ("AAPL", 25.0), ("BND", 80.0)}
+        actual = {(h.symbol.upper(), h.quantity) for h in holdings}
+        return actual == demo
 
     def list_holdings(self) -> list[Holding]:
         with self.connection() as conn:

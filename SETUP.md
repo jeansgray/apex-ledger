@@ -38,8 +38,9 @@ docker compose up --build
 
 | Service | URL | Notes |
 |---------|-----|-------|
-| Apex Ledger UI | http://127.0.0.1:8080 | Council UI, demo ledger auto-seeds on first run |
-| MiroFish backend | http://127.0.0.1:5001 | AGPL simulation service; Apex calls it over HTTP only |
+| Apex Ledger UI | http://127.0.0.1:8080 | Council UI — same dashboard as owner when all services run |
+| MiroFish backend | http://127.0.0.1:5001 | Narrative scenario simulation (AGPL, HTTP only) |
+| Kronos API | http://127.0.0.1:5002 | Quant price forecasts per holding (MIT, HTTP only) |
 
 **Demo mode (no keys):** Leave `LLM_API_KEY` and `ZEP_API_KEY` empty in `.env`. Containers auto-seed the read-only fixture `sim_apex_personal_investor` on first start.
 
@@ -102,12 +103,20 @@ curl -s http://127.0.0.1:8080/health | python3 -m json.tool
 
 1. **Reopen in Container** (`.devcontainer/devcontainer.json`).
 2. `postCreate` installs uv, Python 3.11 + 3.12, syncs deps, initializes the submodule, and runs `setup_mirofish.py --no-start`.
-3. `postStart` launches MiroFish on **:5001** and Apex on **:8080** (logs in `/tmp/mirofish.log`, `/tmp/apex-ledger.log`).
+3. `postStart` launches **Kronos :5002**, **MiroFish :5001**, and **Apex :8080** (logs in `/tmp/kronos.log`, `/tmp/mirofish.log`, `/tmp/apex-ledger.log`).
 4. You still need a local `.env` with keys for **live** simulations — copy from `.env.example` and run `python3 scripts/configure_keys.py`.
 
-## 5. Run services (uv, two terminals)
+## 5. Run services (uv, three terminals)
 
-**Terminal 1 — MiroFish** (port 5001):
+Use **Docker Compose** if you want one command and the full dashboard. For manual uv runs you need **all three** backends:
+
+**Terminal 1 — Kronos** (port 5002):
+
+```bash
+python3 scripts/run_kronos_api.py
+```
+
+**Terminal 2 — MiroFish** (port 5001):
 
 ```bash
 uv sync
@@ -115,14 +124,14 @@ python3 scripts/setup_mirofish.py
 UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend python run.py
 ```
 
-**Terminal 2 — Apex Ledger** (port 8080):
+**Terminal 3 — Apex Ledger** (port 8080):
 
 ```bash
 uv sync --extra dev
 uv run apex-ledger serve --port 8080
 ```
 
-Open http://127.0.0.1:8080
+Open http://127.0.0.1:8080 — you should see animated forecasts in the right rail when you click **Analyze**.
 
 ## 6. Cursor MCP (contributors)
 
@@ -171,16 +180,36 @@ Optional one-shot live bootstrap (long-running):
 python3 scripts/bootstrap_personal_investor_simulation.py
 ```
 
-## 9. CI & GitHub mirror
+## 9. Personal portfolio (replace demo data)
+
+Out of the box, Apex seeds **demo** holdings (VTI, AAPL, BND) and sample bank charges in `./data/ledger.db`. Council runs, Kronos forecasts, and suggested moves all read from that file.
+
+```bash
+curl -s http://127.0.0.1:8080/config | python3 -m json.tool
+# "ledger_mode": "demo" | "personal"
+```
+
+**Import your holdings:**
+
+```bash
+cp examples/holdings.example.csv my_holdings.csv
+# edit: symbol, quantity, cost_basis, account
+python3 scripts/import_personal_ledger.py my_holdings.csv
+# or: uv run apex-ledger import-ledger my_holdings.csv
+```
+
+Restart Apex (or `docker compose restart apex`) and run **Analyze** again. The UI status pill switches from **Demo portfolio** to **Your portfolio**.
+
+**Reset to demo:** `rm -f data/ledger.db && uv run apex-ledger seed-ledger`
+
+## 10. What's not wired yet
+
+- Broker/bank OAuth (Plaid, Robinhood API, etc.)
+- Production deployment / multi-user auth
+
+## 11. CI & GitHub mirror
 
 - **GitLab CI (primary):** `.gitlab-ci.yml` runs `uv sync --extra dev && uv run pytest tests/ -q` on push/MR to `main`.
 - **GitHub repo:** https://github.com/jeansgray/apex-ledger  
 - **GitHub Actions CI:** `.github/workflows/ci.yml` — same pytest job as GitLab (mirror remote).
-- **Docs site:** `docs/` deploys via `.github/workflows/pages.yml`. **One-time setup:** GitHub repo **Settings → Pages → Build and deployment → Source: GitHub Actions**. Until that is enabled, the Pages workflow fails with “Get Pages site failed”. The published site is static onboarding only; the council UI still runs locally.
-
-## 10. What's not wired yet
-
-- Real personal holdings / profile (demo ledger is seeded)
-- Production deployment / auth
-
-Track progress in GitLab issues on the project board.
+- **Docs site:** `docs/` deploys via `.github/workflows/pages.yml`. Static onboarding only; the council UI runs locally.

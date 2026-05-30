@@ -1,0 +1,4 @@
+symbol,quantity,cost_basis,account
+VTI,150,32000,brokerage
+BND,200,15000,brokerage
+VXUS,40,2800,brokerage

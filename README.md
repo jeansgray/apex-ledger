@@ -129,13 +129,17 @@ cp .env.example .env
 # Optional but recommended for live sims — add keys to .env, then:
 python3 scripts/configure_keys.py
 
-# 1) MiroFish backend (terminal 1)
+# 2) Kronos API (terminal 1)
+python3 scripts/run_kronos_api.py
+# → http://127.0.0.1:5002
+
+# 3) MiroFish backend (terminal 2)
 uv sync
 python3 scripts/setup_mirofish.py
 UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend python run.py
 # → http://127.0.0.1:5001
 
-# 2) Apex Ledger (terminal 2)
+# 4) Apex Ledger (terminal 3)
 uv sync --extra dev
 uv run apex-ledger serve --port 8080
 # → http://127.0.0.1:8080
@@ -149,10 +153,18 @@ uv run apex-ledger council-run "How would a Fed rate cut affect my ETF-heavy por
 
 ### What to expect in the UI
 
-- **Suggested moves** — simulation-informed buy/hold/trim ideas (approve to save; nothing trades automatically).
-- **Live simulation** — first question on a topic may spawn a background MiroFish run (often 5–15 min); UI polls until ready.
-- **Demo mode** — if keys are missing, uses fixture `sim_apex_personal_investor`.
-- **Personal data** — demo ledger is seeded; real holdings/profile wiring is planned next.
+- **Same dashboard everywhere** when all three services run (Docker Compose = recommended). Dev container and manual uv need Kronos on `:5002` too — otherwise forecasts degrade to fixtures.
+- **Suggested moves** — quant + narrative evidence; approve to save (nothing trades automatically).
+- **Live simulation** — with LLM + Zep keys, new topics spawn background MiroFish runs (5–15 min).
+- **Demo portfolio by default** — VTI/AAPL/BND seeded into `./data/ledger.db`. Replace with your holdings:
+
+```bash
+cp examples/holdings.example.csv my_holdings.csv
+# edit symbols/quantities, then:
+python3 scripts/import_personal_ledger.py my_holdings.csv
+```
+
+See [SETUP.md §9 Personal portfolio](SETUP.md#9-personal-portfolio-replace-demo-data).
 
 ## Apex Council (personal investor)
 

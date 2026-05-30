@@ -5,9 +5,10 @@
     "ghcr.io/devcontainers/features/common-utils:2": {},
     "ghcr.io/devcontainers/features/git:1": {}
   },
-  "forwardPorts": [5001, 8080],
+  "forwardPorts": [5001, 5002, 8080],
   "portsAttributes": {
     "5001": { "label": "MiroFish backend" },
+    "5002": { "label": "Kronos forecasts" },
     "8080": { "label": "Apex Ledger UI" }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",

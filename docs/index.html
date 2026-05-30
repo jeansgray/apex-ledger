@@ -20,6 +20,9 @@
         </div>
       </div>
       <nav class="toc" aria-label="On this page">
+        <a href="#architecture">Architecture</a>
+        <a href="#same-ui">Same dashboard?</a>
+        <a href="#personal">Your portfolio</a>
         <a href="#repos">Repositories</a>
         <a href="#prerequisites">Prerequisites</a>
         <a href="#clone">Clone &amp; setup</a>
@@ -29,6 +32,81 @@
         <a href="#boundary">AGPL boundary</a>
       </nav>
     </header>
+
+    <section id="architecture">
+      <h2>Three-service architecture</h2>
+      <p>Apex Ledger is <strong>not</strong> a single web app. The council UI on <code>:8080</code> calls two HTTP backends:</p>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Service</th><th>Port</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Apex Ledger</strong></td>
+              <td>8080</td>
+              <td>Dashboard UI, SQLite ledger, council pipeline, human approval gates</td>
+            </tr>
+            <tr>
+              <td><strong>Kronos API</strong></td>
+              <td>5002</td>
+              <td>Quant price forecasts per holding (animated charts in the UI rail)</td>
+            </tr>
+            <tr>
+              <td><strong>MiroFish</strong></td>
+              <td>5001</td>
+              <td>Narrative scenario simulation — investor reactions, timelines, reports (AGPL submodule)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Council merges <em>both</em> signals into suggested moves. Missing Kronos → forecasts fall back to fixtures; missing MiroFish → demo simulation fixture only.</p>
+    </section>
+
+    <section id="same-ui">
+      <h2>Will I see the same dashboard?</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>How you run it</th><th>Full UI (forecasts + moves + debate)?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Docker Compose</strong> <code>docker compose up --build</code></td>
+              <td>Yes — all three services start together (recommended for collaborators)</td>
+            </tr>
+            <tr>
+              <td><strong>Cursor / VS Code dev container</strong></td>
+              <td>Yes — postStart launches Kronos, MiroFish, and Apex automatically</td>
+            </tr>
+            <tr>
+              <td><strong>Manual uv (two terminals)</strong></td>
+              <td><strong>No</strong> — you need <em>three</em> terminals (Kronos + MiroFish + Apex). See <a href="#run">Run locally</a>.</td>
+            </tr>
+            <tr>
+              <td><strong>GitHub Pages (this site)</strong></td>
+              <td>No — static docs only. The interactive UI always runs on your machine.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="personal">
+      <h2>Your portfolio (not demo data)</h2>
+      <div class="card warn">
+        <strong>First launch seeds demo holdings</strong> — VTI, AAPL, BND plus sample bank charges in <code>./data/ledger.db</code>. Forecasts and suggested moves target whatever is in that file until you replace it.
+      </div>
+      <p>Check mode:</p>
+      <pre><code>curl -s http://127.0.0.1:8080/config | python3 -m json.tool
+# "ledger_mode": "demo" or "personal"</code></pre>
+      <p>Import your holdings from CSV:</p>
+      <pre><code>cp examples/holdings.example.csv my_holdings.csv
+# columns: symbol, quantity, cost_basis, account
+python3 scripts/import_personal_ledger.py my_holdings.csv</code></pre>
+      <p>Restart Apex, open <code>http://127.0.0.1:8080</code>, click <strong>Analyze</strong>. Status pill shows <strong>Your portfolio</strong>. Full details: <a href="https://github.com/jeansgray/apex-ledger/blob/main/SETUP.md#9-personal-portfolio-replace-demo-data">SETUP.md §9</a>.</p>
+      <p><em>Not built yet:</em> broker OAuth, bank sync, or a settings screen — CSV import is the supported path today.</p>
+    </section>
 
     <section id="repos">
       <h2>Repositories</h2>
@@ -43,7 +121,7 @@
     <section id="ui-note">
       <div class="card warn">
         <strong>Council UI runs on your machine, not on GitHub Pages.</strong>
-        <p>This site is onboarding documentation only. The FastAPI council UI (<code>http://127.0.0.1:8080</code>) and MiroFish backend (<code>:5001</code>) must be started locally, in a dev container, or via Docker Compose.</p>
+        <p>This site is onboarding documentation only. The council UI (<code>http://127.0.0.1:8080</code>) plus backends <strong>Kronos</strong> (<code>:5002</code>) and <strong>MiroFish</strong> (<code>:5001</code>) must run locally, in a dev container, or via Docker Compose.</p>
       </div>
     </section>
 
@@ -137,13 +215,16 @@ python3 scripts/setup_mirofish.py --no-start</code></pre>
     </section>
 
     <section id="run">
-      <h2>Run locally (two terminals)</h2>
-      <h3>Terminal 1 — MiroFish (port 5001)</h3>
+      <h2>Run locally (three terminals)</h2>
+      <p>All three services are required for the full dashboard (forecasts rail, council debate, suggested moves).</p>
+      <h3>Terminal 1 — Kronos (port 5002)</h3>
+      <pre><code>python3 scripts/run_kronos_api.py</code></pre>
+      <h3>Terminal 2 — MiroFish (port 5001)</h3>
       <pre><code>uv python install 3.12
 UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend python run.py</code></pre>
-      <h3>Terminal 2 — Apex Ledger (port 8080)</h3>
+      <h3>Terminal 3 — Apex Ledger (port 8080)</h3>
       <pre><code>uv run apex-ledger serve --port 8080</code></pre>
-      <p>Open <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a> for the council UI.</p>
+      <p>Open <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a> · Verify: <code>curl -s localhost:8080/health</code> should show <code>"kronos":"ok"</code> and <code>"mirofish":"ok"</code>.</p>
     </section>
 
     <section id="docker">
@@ -155,8 +236,9 @@ UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend pyth
     </section>
 
     <section id="boundary">
-      <h2>AGPL boundary</h2>
-      <p><code>vendor/mirofish</code> is AGPL-3.0. Do <strong>not</strong> import MiroFish Python code into <code>src/apex_ledger/</code>. Run MiroFish as a separate process and call it over HTTP via <code>MIROFISH_BASE_URL</code>.</p>
+      <h2>Service boundaries</h2>
+      <p><code>vendor/mirofish</code> is AGPL-3.0. Do <strong>not</strong> import MiroFish Python code into <code>src/apex_ledger/</code>. Call it over HTTP via <code>MIROFISH_BASE_URL</code>.</p>
+      <p>Kronos runs as a separate MIT-licensed service at <code>KRONOS_BASE_URL</code> (default <code>http://127.0.0.1:5002</code>). Same HTTP-only rule — no imports from <code>services/kronos_api</code> into council code beyond the existing client.</p>
     </section>
 
     <footer>

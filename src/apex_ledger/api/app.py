@@ -57,12 +57,15 @@ def health() -> dict:
 
 @app.get("/config")
 def public_config() -> dict:
+    _orchestrator.ledger.seed_demo_data()
     return {
         "default_simulation_id": _settings.mirofish_default_simulation_id,
         "mirofish_base_url": _settings.mirofish_base_url,
         "kronos_base_url": _settings.kronos_base_url,
         "keys": _orchestrator.keys_status(),
         "default_cash_to_deploy": _settings.apex_default_cash_to_deploy,
+        "ledger_mode": "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal",
+        "holdings_count": len(_orchestrator.ledger.list_holdings()),
     }
 
 

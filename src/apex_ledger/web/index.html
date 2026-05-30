@@ -703,10 +703,17 @@
 
     api("/config").then(cfg => {
       const pill = document.getElementById("status-pill");
-      if (cfg.keys?.valid) {
-        pill.textContent = "Live";
+      const parts = [];
+      if (cfg.ledger_mode === "demo") {
+        parts.push("Demo portfolio");
+        pill.className = "status-pill demo";
+      } else if (cfg.ledger_mode === "personal") {
+        parts.push("Your portfolio");
         pill.className = "status-pill live";
       }
+      if (cfg.keys?.valid) parts.push("Live sim");
+      else parts.push("Demo sim");
+      pill.textContent = parts.join(" · ");
       if (cfg.default_simulation_id) document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
       if (cfg.default_cash_to_deploy) document.getElementById("cash").value = cfg.default_cash_to_deploy;
     }).catch(() => {});

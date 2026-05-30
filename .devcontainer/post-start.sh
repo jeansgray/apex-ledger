@@ -6,6 +6,11 @@ export PATH="$HOME/.local/bin:${PATH:-}"
 
 PY312="$(uv python find 3.12)"
 
+if ! curl -sf http://127.0.0.1:5002/health >/dev/null 2>&1; then
+  nohup python3 scripts/run_kronos_api.py > /tmp/kronos.log 2>&1 &
+  echo "Starting Kronos API on :5002 (log: /tmp/kronos.log)"
+fi
+
 if ! curl -sf http://127.0.0.1:5001/health >/dev/null 2>&1; then
   nohup env UV_PYTHON="$PY312" uv run --directory vendor/mirofish/backend python run.py \
     > /tmp/mirofish.log 2>&1 &
