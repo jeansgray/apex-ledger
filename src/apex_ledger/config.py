@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model_name: str = "gpt-4o-mini"
 
+    alpha_vantage_api_key: str = ""
+
     # Future bank sync (Plaid) — set in .env when ready
     plaid_client_id: str = ""
     plaid_secret: str = ""

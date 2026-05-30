@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 
 from ..config import Settings
+from ..data.alpha_vantage import AlphaVantageClient
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -56,6 +57,10 @@ class CouncilOrchestrator:
             fixtures_dir=Path("./fixtures/kronos"),
         )
         self.skills = SkillRegistry(settings.apex_skills_dir, settings.apex_skill_manifest)
+        self.alpha_vantage = AlphaVantageClient(
+            settings.alpha_vantage_api_key,
+            cache_dir=settings.apex_data_dir / "av_cache",
+        )
         self._runs: dict[str, CouncilRunState] = {}
 
     def run(
@@ -304,9 +309,33 @@ class CouncilOrchestrator:
     def _run_research_curator(self, state: CouncilRunState, topic: TopicAnalysis) -> None:
         state.research_notes.extend(topic.research_bullets)
         holdings = state.portfolio_snapshot.get("holdings", [])
-        if holdings:
-            symbols = ", ".join(h["symbol"] for h in holdings[:5])
-            state.research_notes.append(f"[portfolio] Current holdings: {symbols}.")
+        if not holdings:
+            state.agent_outputs["research_curator"] = "No holdings found."
+            return
+
+        symbols = list(dict.fromkeys(h["symbol"] for h in holdings[:5]))
+        state.research_notes.append(f"[portfolio] Current holdings: {', '.join(symbols)}.")
+
+        # Alpha Vantage: news/sentiment across all symbols
+        news = self.alpha_vantage.news_sentiment(symbols)
+        state.research_notes.extend(news)
+
+        # Alpha Vantage: per-symbol earnings + fundamentals
+        fundamental_count = 0
+        for symbol in symbols:
+            earnings = self.alpha_vantage.earnings_summary(symbol)
+            overview = self.alpha_vantage.overview_summary(symbol)
+            state.research_notes.extend(earnings)
+            state.research_notes.extend(overview)
+            fundamental_count += len(earnings) + len(overview)
+
+        parts = []
+        if news:
+            parts.append(f"{len(news)} news item(s)")
+        if fundamental_count:
+            parts.append(f"{fundamental_count} fundamental data point(s)")
+        av_note = f"Alpha Vantage: {', '.join(parts)}." if parts else "Alpha Vantage: rate limit hit — cached data will be used on next run."
+        state.agent_outputs["research_curator"] = av_note
 
     def _run_scenario_cartographer(
         self,
