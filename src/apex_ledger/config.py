@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     apex_simulation_cache: Path = Path("./data/simulation_cache.json")
     apex_default_cash_to_deploy: float = 1000.0
     apex_use_live_simulation: bool = True
+    apex_use_kronos: bool = True
+    kronos_base_url: str = "http://127.0.0.1:5002"
+    kronos_forecast_days: int = 30
 
     llm_api_key: str = ""
     zep_api_key: str = ""

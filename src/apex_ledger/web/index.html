@@ -223,6 +223,53 @@
       padding-left: 0.65rem;
       margin-top: 0.25rem;
     }
+    .move-citation.kronos { border-left-color: #a7f3d0; }
+    .move-citation.mirofish { border-left-color: #bfdbfe; }
+    .signal-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+    .signal-aligned { background: var(--ok-soft); color: var(--ok); }
+    .signal-mixed { background: var(--warn-soft); color: var(--warn); }
+    .signal-narrative { background: var(--info-soft); color: #4338ca; }
+    .forecast-grid { display: grid; gap: 0.75rem; }
+    @media (min-width: 640px) { .forecast-grid { grid-template-columns: repeat(3, 1fr); } }
+    .forecast-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem;
+      background: #fbfdff;
+    }
+    .forecast-card .sym { font-weight: 800; font-size: 1.1rem; }
+    .forecast-card .dir-up { color: var(--ok); }
+    .forecast-card .dir-down { color: var(--danger); }
+    .forecast-card .dir-flat { color: var(--muted); }
+    .sparkline {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 48px;
+      margin-top: 0.5rem;
+    }
+    .sparkline span {
+      flex: 1;
+      background: linear-gradient(180deg, #93c5fd 0%, #2563eb 100%);
+      border-radius: 2px 2px 0 0;
+      min-height: 4px;
+    }
+    .debate-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+    .debate-item {
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      font-size: 0.875rem;
+      color: var(--text);
+    }
     .sim-status {
       font-size: 0.875rem;
       color: var(--muted);
@@ -277,6 +324,18 @@
         <div id="sim-status" class="sim-status" hidden></div>
         <div class="move-list" id="suggested-moves"></div>
         <div id="moves-gate" hidden></div>
+      </section>
+
+      <section class="panel" id="forecasts-section">
+        <h2 class="section-title">Market forecasts <span id="signal-badge" class="signal-badge signal-aligned" hidden></span></h2>
+        <p class="hint" style="margin-bottom:0.75rem">Kronos-style price paths for your holdings — numeric evidence for the council.</p>
+        <div class="forecast-grid" id="forecasts"></div>
+      </section>
+
+      <section class="panel" id="debate-section">
+        <h2 class="section-title">How the council debated this</h2>
+        <p class="hint" style="margin-bottom:0.75rem">Quant vs narrative — where they agreed or pushed back.</p>
+        <ul class="debate-list" id="council-debate"></ul>
       </section>
 
       <section class="panel">
@@ -403,6 +462,46 @@
       el.hidden = true;
     }
 
+    function signalBadgeLabel(agreement) {
+      if (agreement === "mixed") return { text: "Mixed signals", cls: "signal-mixed" };
+      if (agreement === "narrative_only") return { text: "Narrative only", cls: "signal-narrative" };
+      return { text: "Signals aligned", cls: "signal-aligned" };
+    }
+
+    function renderForecasts(state, brief) {
+      const forecasts = brief.kronos_forecasts || state.kronos_forecasts || [];
+      const section = document.getElementById("forecasts-section");
+      const badge = document.getElementById("signal-badge");
+      const agreement = brief.signal_agreement || state.signal_agreement || "aligned";
+      const sig = signalBadgeLabel(agreement);
+      badge.hidden = false;
+      badge.className = "signal-badge " + sig.cls;
+      badge.textContent = sig.text;
+      section.hidden = forecasts.length === 0;
+      document.getElementById("forecasts").innerHTML = forecasts.map(f => {
+        const dirClass = f.direction === "up" ? "dir-up" : f.direction === "down" ? "dir-down" : "dir-flat";
+        const spark = f.sparkline || [];
+        const max = Math.max(...spark, 1);
+        const bars = spark.map(v =>
+          '<span style="height:' + Math.max(8, Math.round((v / max) * 100)) + '%"></span>'
+        ).join("");
+        return '<article class="forecast-card"><div class="sym">' + escapeHtml(f.symbol) +
+          '</div><div class="' + dirClass + '" style="font-weight:700;margin:0.25rem 0">' +
+          escapeHtml(String(f.direction).toUpperCase()) + " · " + escapeHtml(String(f.return_pct)) + "% / " +
+          escapeHtml(String(f.horizon_days)) + "d</div><div class=\"hint\" style=\"margin:0\">" +
+          escapeHtml(f.citation) + '</div><div class="sparkline">' + bars + "</div></article>";
+      }).join("");
+    }
+
+    function renderCouncilDebate(state, brief) {
+      const lines = brief.council_debate || state.council_debate || [];
+      const section = document.getElementById("debate-section");
+      section.hidden = lines.length === 0;
+      document.getElementById("council-debate").innerHTML = lines.map(line =>
+        '<li class="debate-item">' + escapeHtml(line) + "</li>"
+      ).join("");
+    }
+
     function renderSuggestedMoves(state, brief) {
       const moves = brief.suggested_moves || state.suggested_moves || [];
       const section = document.getElementById("moves-section");
@@ -415,15 +514,24 @@
         const alloc = move.allocation_pct != null
           ? "<span>" + Number(move.allocation_pct).toFixed(0) + "% of new money</span>"
           : "";
+        const mixed = move.signal_agreement === "mixed"
+          ? '<span class="signal-badge signal-mixed">Mixed signals</span> '
+          : "";
+        const kronos = move.kronos_citation
+          ? '<div class="move-citation kronos"><strong>Kronos:</strong> ' + escapeHtml(move.kronos_citation) + "</div>"
+          : "";
+        const miro = move.simulation_citation
+          ? '<div class="move-citation mirofish"><strong>MiroFish:</strong> ' + escapeHtml(move.simulation_citation) + "</div>"
+          : "";
         return '<article class="move-card"><div class="move-head"><div><div class="move-symbol">' +
           escapeHtml(move.symbol) + " · " + escapeHtml(actionLabel(move.action)) +
           '</div><h3 class="move-title">' + escapeHtml(move.title) +
-          '</h3></div><span class="badge badge-consider">' + escapeHtml(confidenceLabel(move.confidence)) +
-          '</span></div><p class="hint" style="margin:0">' + escapeHtml(move.rationale) +
+          '</h3></div><div>' + mixed + '<span class="badge badge-consider">' +
+          escapeHtml(confidenceLabel(move.confidence)) + " · " +
+          Math.round(Number(move.confidence || 0) * 100) + "%" +
+          '</span></div></div><p class="hint" style="margin:0">' + escapeHtml(move.rationale) +
           '</p><div class="move-meta">' + amount + alloc +
-          '</div>' + (move.simulation_citation
-            ? '<div class="move-citation"><strong>From simulation:</strong> ' + escapeHtml(move.simulation_citation) + "</div>"
-            : "") + "</article>";
+          "</div>" + kronos + miro + "</article>";
       }).join("");
       renderGate(
         "moves-gate",
@@ -504,6 +612,15 @@
       if ((!brief.suggested_moves || brief.suggested_moves.length === 0) && state.suggested_moves?.length) {
         brief.suggested_moves = state.suggested_moves;
       }
+      if ((!brief.kronos_forecasts || brief.kronos_forecasts.length === 0) && state.kronos_forecasts?.length) {
+        brief.kronos_forecasts = state.kronos_forecasts;
+      }
+      if ((!brief.council_debate || brief.council_debate.length === 0) && state.council_debate?.length) {
+        brief.council_debate = state.council_debate;
+      }
+      if (!brief.signal_agreement && state.signal_agreement) {
+        brief.signal_agreement = state.signal_agreement;
+      }
       return brief;
     }
 
@@ -549,6 +666,8 @@
         '<div class="bottom-line"><strong>Bottom line:</strong> ' + escapeHtml(brief.bottom_line) + "</div>";
 
       renderSuggestedMoves(state, brief);
+      renderForecasts(state, brief);
+      renderCouncilDebate(state, brief);
 
       document.getElementById("portfolio-summary").textContent = brief.portfolio_summary || "";
 

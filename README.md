@@ -1,6 +1,6 @@
 # Apex Ledger
 
-Personal investor platform: **MiroFish-backed scenario council** + **ledger reconciliation**, with Robinhood-style **suggested moves** and human approval gates.
+Personal investor platform: **Kronos quant forecasts** + **MiroFish narrative simulation** + **council debate**, with Robinhood-style **suggested moves** and human approval gates.
 
 Built for a single investor (holdings, cash goals, life questions) — not a generic trading bot.
 
@@ -100,7 +100,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open **http://127.0.0.1:8080** (Apex council UI). MiroFish runs at **http://127.0.0.1:5001** (AGPL backend — HTTP only).
+Open **http://127.0.0.1:8080** (Apex council UI). Backends: MiroFish **:5001** (AGPL, narrative sim) and Kronos API **:5002** (MIT, quant forecasts).
 
 | Mode | Keys in `.env` | What you get |
 |------|----------------|--------------|
@@ -161,6 +161,7 @@ uv run apex-ledger council-run "How would a Fed rate cut affect my ETF-heavy por
 | Ledger Steward | Holdings + unmatched transactions |
 | Reconciliation Proposer | Category proposals → **human gate** |
 | Research Curator | Portfolio-scoped context |
+| Quant Forecaster | Kronos-style OHLCV forecasts per holding |
 | Scenario Cartographer | MiroFish interviews / report / timeline |
 | Compliance Skeptic | Concentration & assumption flags |
 | Scenario Synthesizer | Base / upside / downside brief |

@@ -8,8 +8,9 @@ def test_council_run_without_mirofish(tmp_path):
     db = tmp_path / "ledger.db"
     settings = Settings(
         apex_ledger_db=db,
-        mirofish_default_simulation_id="",
+        mirofish_default_simulation_id="sim_apex_personal_investor",
         apex_use_live_simulation=False,
+        apex_use_kronos=True,
     )
     orchestrator = CouncilOrchestrator(settings)
     state = orchestrator.run(
@@ -22,6 +23,9 @@ def test_council_run_without_mirofish(tmp_path):
     assert state.portfolio_snapshot["holdings"]
     assert state.friendly_brief.get("action_items")
     assert state.suggested_moves
+    assert state.kronos_forecasts
+    assert state.council_debate
+    assert state.signal_agreement in {"aligned", "mixed", "narrative_only"}
     assert any(g.kind == "investment_moves" for g in state.human_gates)
 
 

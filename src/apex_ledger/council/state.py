@@ -34,6 +34,10 @@ class CouncilRunState(BaseModel):
     friendly_brief: dict[str, Any] = Field(default_factory=dict)
     topic_analysis: dict[str, Any] = Field(default_factory=dict)
     suggested_moves: list[dict[str, Any]] = Field(default_factory=list)
+    kronos_forecasts: list[dict[str, Any]] = Field(default_factory=list)
+    council_debate: list[str] = Field(default_factory=list)
+    signal_agreement: str = "aligned"
+    confidence_multiplier: float = 1.0
     simulation_factory: dict[str, Any] = Field(default_factory=dict)
     cash_to_deploy: float = 1000.0
     status: str = "running"

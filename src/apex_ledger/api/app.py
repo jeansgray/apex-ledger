@@ -40,10 +40,16 @@ def health() -> dict:
         mirofish_ok = _orchestrator.mirofish.health().get("status") == "ok"
     except Exception:
         mirofish_ok = False
+    kronos_ok = False
+    try:
+        kronos_ok = _orchestrator.kronos.health().get("status") == "ok"
+    except Exception:
+        kronos_ok = False
     return {
         "status": "ok",
         "service": "apex-ledger",
         "mirofish": "ok" if mirofish_ok else "unreachable",
+        "kronos": "ok" if kronos_ok else "unreachable",
         "keys": _orchestrator.keys_status(),
         "default_simulation_id": _settings.mirofish_default_simulation_id,
     }
@@ -54,6 +60,7 @@ def public_config() -> dict:
     return {
         "default_simulation_id": _settings.mirofish_default_simulation_id,
         "mirofish_base_url": _settings.mirofish_base_url,
+        "kronos_base_url": _settings.kronos_base_url,
         "keys": _orchestrator.keys_status(),
         "default_cash_to_deploy": _settings.apex_default_cash_to_deploy,
     }

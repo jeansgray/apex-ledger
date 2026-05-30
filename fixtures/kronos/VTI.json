@@ -1,0 +1,12 @@
+{
+  "symbol": "VTI",
+  "direction": "up",
+  "return_pct": 2.4,
+  "volatility_pct": 11.2,
+  "horizon_days": 30,
+  "last_close": 248.5,
+  "predicted_close": 254.46,
+  "citation": "Kronos-style forecast: modest uptrend over 30 sessions; vol near historical average.",
+  "mode": "fixture",
+  "sparkline": [242.1, 243.0, 244.2, 245.1, 246.0, 246.8, 247.2, 247.9, 248.1, 248.5, 249.0, 250.1, 251.0, 252.2, 253.0, 253.8, 254.0, 254.2, 254.4, 254.46]
+}

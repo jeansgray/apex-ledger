@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import httpx
 
 from ..config import Settings
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
+from ..kronos.client import KronosClient
 from ..mirofish.client import MiroFishClient, MiroFishError
 from ..mirofish.factory import FactoryResult, SimulationFactory
 from ..mirofish.keys import load_mirofish_keys
 from ..skills.loader import SkillRegistry
+from .challenge import run_signal_challenge
 from .presentation import build_friendly_brief
 from .recommendations import build_suggested_moves
 from .roster import COUNCIL_ROLES
@@ -47,6 +51,10 @@ class CouncilOrchestrator:
             settings.apex_simulation_cache,
             settings.apex_data_dir / "briefs",
         )
+        self.kronos = KronosClient(
+            settings.kronos_base_url,
+            fixtures_dir=Path("./fixtures/kronos"),
+        )
         self.skills = SkillRegistry(settings.apex_skills_dir, settings.apex_skill_manifest)
         self._runs: dict[str, CouncilRunState] = {}
 
@@ -74,7 +82,9 @@ class CouncilOrchestrator:
             self._resolve_simulation(state, topic, simulation_id, use_live_simulation)
             self._run_reconciliation_proposer(state)
             self._run_research_curator(state, topic)
+            self._run_quant_forecaster(state)
             self._run_scenario_cartographer(state, topic)
+            self._run_signal_challenge(state)
             self._run_compliance_skeptic(state, topic)
             self._run_scenario_synthesizer(state, topic)
             self._run_recommendation_engine(state, topic)
@@ -104,6 +114,7 @@ class CouncilOrchestrator:
                 "simulation_id": factory_status.simulation_id,
             }
             self._run_scenario_cartographer(state, topic, force=True)
+            self._run_signal_challenge(state)
             self._run_recommendation_engine(state, topic)
             state.friendly_brief = build_friendly_brief(state, topic).model_dump()
             state.status = "awaiting_human"
@@ -213,22 +224,57 @@ class CouncilOrchestrator:
             state.simulation_id = result.simulation_id
 
     def _run_recommendation_engine(self, state: CouncilRunState, topic: TopicAnalysis) -> None:
+        from ..kronos.models import SymbolForecast
+
         holdings = state.portfolio_snapshot.get("holdings", [])
+        forecasts = [SymbolForecast.model_validate(f) for f in state.kronos_forecasts]
         moves = build_suggested_moves(
             topic,
             holdings,
             state.simulation_insights,
             cash_to_deploy=state.cash_to_deploy,
+            kronos_forecasts=forecasts,
+            confidence_multiplier=state.confidence_multiplier,
+            signal_agreement=state.signal_agreement,
         )
         state.suggested_moves = [m.model_dump() for m in moves]
         state.human_gates.append(
             HumanGate(
                 kind="investment_moves",
-                summary=f"Review {len(moves)} suggested move(s) from MiroFish-backed analysis.",
+                summary=(
+                    f"Review {len(moves)} suggested move(s) from Kronos + MiroFish council analysis."
+                ),
                 payload={"moves": state.suggested_moves},
             )
         )
         state.agent_outputs["recommendation_engine"] = f"Proposed {len(moves)} investment move(s)."
+
+    def _run_quant_forecaster(self, state: CouncilRunState) -> None:
+        if not self.settings.apex_use_kronos:
+            state.agent_outputs["quant_forecaster"] = "Kronos forecasts disabled."
+            return
+        symbols = [h.get("symbol", "") for h in state.portfolio_snapshot.get("holdings", [])]
+        try:
+            forecasts = self.kronos.forecast_symbols(
+                symbols,
+                pred_len=self.settings.kronos_forecast_days,
+            )
+            state.kronos_forecasts = [f.model_dump() for f in forecasts]
+            state.agent_outputs["quant_forecaster"] = (
+                f"Forecast {len(forecasts)} symbol(s) over {self.settings.kronos_forecast_days} days."
+            )
+        except Exception as exc:  # noqa: BLE001
+            state.agent_outputs["quant_forecaster"] = f"Kronos unavailable: {exc}"
+
+    def _run_signal_challenge(self, state: CouncilRunState) -> None:
+        from ..kronos.models import SymbolForecast
+
+        forecasts = [SymbolForecast.model_validate(f) for f in state.kronos_forecasts]
+        debate, agreement, multiplier = run_signal_challenge(forecasts, state.simulation_insights)
+        state.council_debate = debate
+        state.signal_agreement = agreement
+        state.confidence_multiplier = multiplier
+        state.agent_outputs["signal_challenge"] = f"Council signal agreement: {agreement}."
 
     def _run_ledger_steward(self, state: CouncilRunState) -> None:
         snapshot = self.ledger.portfolio_snapshot()
@@ -316,4 +362,14 @@ class CouncilOrchestrator:
 
     def keys_status(self) -> dict:
         keys = load_mirofish_keys()
-        return {"valid": keys.valid, "llm_configured": bool(keys.llm_api_key), "zep_configured": bool(keys.zep_api_key)}
+        kronos_ok = False
+        try:
+            kronos_ok = self.kronos.health().get("status") == "ok"
+        except Exception:
+            kronos_ok = False
+        return {
+            "valid": keys.valid,
+            "llm_configured": bool(keys.llm_api_key),
+            "zep_configured": bool(keys.zep_api_key),
+            "kronos": "ok" if kronos_ok else "unreachable",
+        }

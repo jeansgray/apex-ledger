@@ -56,6 +56,9 @@ class FriendlyBrief(BaseModel):
     direct_answer: str = ""
     bottom_line: str
     suggested_moves: list[dict[str, Any]] = Field(default_factory=list)
+    kronos_forecasts: list[dict[str, Any]] = Field(default_factory=list)
+    council_debate: list[str] = Field(default_factory=list)
+    signal_agreement: str = "aligned"
     action_items: list[ActionItem] = Field(default_factory=list)
     portfolio_summary: str = ""
     holdings: list[dict[str, Any]] = Field(default_factory=list)
@@ -316,8 +319,13 @@ def build_friendly_brief(state: CouncilRunState, topic: TopicAnalysis | None = N
             "Approve moves you agree with — nothing executes automatically."
         )
     elif state.suggested_moves:
+        agreement_note = {
+            "aligned": "Kronos forecasts and MiroFish narrative agree — ",
+            "mixed": "Mixed signals between Kronos and MiroFish — ",
+            "narrative_only": "MiroFish narrative only (no quant forecasts) — ",
+        }.get(state.signal_agreement, "")
         bottom_line = (
-            "Suggested moves come from your MiroFish simulation + portfolio. "
+            f"{agreement_note}Suggested moves blend quant + narrative evidence. "
             "Approve to save them to your decision log."
         )
     else:
@@ -331,6 +339,9 @@ def build_friendly_brief(state: CouncilRunState, topic: TopicAnalysis | None = N
         direct_answer=topic.direct_answer,
         bottom_line=bottom_line,
         suggested_moves=state.suggested_moves,
+        kronos_forecasts=state.kronos_forecasts,
+        council_debate=state.council_debate,
+        signal_agreement=state.signal_agreement,
         action_items=action_items,
         portfolio_summary=portfolio_summary,
         holdings=holdings_plain,

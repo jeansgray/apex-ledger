@@ -4,11 +4,12 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 COPY skills ./skills
 COPY scripts ./scripts
 COPY .cursor/skills ./.cursor/skills
+COPY fixtures/kronos ./fixtures/kronos
 
 COPY scripts/seed_personal_investor_simulation.py ./scripts/
 

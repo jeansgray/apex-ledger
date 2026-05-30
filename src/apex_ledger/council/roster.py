@@ -33,6 +33,16 @@ COUNCIL_ROLES: tuple[CouncilRole, ...] = (
         runs_after=("ledger_steward",),
     ),
     CouncilRole(
+        id="quant_forecaster",
+        title="Quant Forecaster",
+        mandate=(
+            "Run Kronos-style OHLCV forecasts on portfolio symbols; summarize direction, "
+            "return path, and volatility for the council."
+        ),
+        skill_name="apex-quant-forecast",
+        runs_after=("ledger_steward",),
+    ),
+    CouncilRole(
         id="scenario_cartographer",
         title="Scenario Cartographer",
         mandate=(

@@ -1,0 +1,12 @@
+{
+  "symbol": "BND",
+  "direction": "up",
+  "return_pct": 1.1,
+  "volatility_pct": 4.8,
+  "horizon_days": 30,
+  "last_close": 72.4,
+  "predicted_close": 73.2,
+  "citation": "Kronos-style forecast: gentle rise as rate-cut expectations support duration assets.",
+  "mode": "fixture",
+  "sparkline": [71.2, 71.4, 71.5, 71.6, 71.8, 72.0, 72.1, 72.2, 72.3, 72.4, 72.5, 72.6, 72.7, 72.8, 72.9, 73.0, 73.05, 73.1, 73.15, 73.2]
+}

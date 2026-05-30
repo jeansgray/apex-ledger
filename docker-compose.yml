@@ -3,6 +3,24 @@
 # Keys: mount via env_file (.env); never bake secrets into images.
 
 services:
+  kronos:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.kronos
+    container_name: apex-kronos
+    environment:
+      KRONOS_FIXTURES_DIR: /app/fixtures/kronos
+      KRONOS_FIXTURE_ONLY: "false"
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   mirofish:
     build:
       context: .
@@ -36,6 +54,7 @@ services:
       - .env
     environment:
       MIROFISH_BASE_URL: http://mirofish:5001
+      KRONOS_BASE_URL: http://kronos:5002
       MIROFISH_DEFAULT_SIMULATION_ID: sim_apex_personal_investor
       APEX_DATA_DIR: /app/data
       APEX_LEDGER_DB: /app/data/ledger.db
@@ -45,6 +64,8 @@ services:
       - ./data:/app/data
       - ./.cursor/skills:/app/.cursor/skills:ro
     depends_on:
+      kronos:
+        condition: service_healthy
       mirofish:
         condition: service_healthy
     restart: unless-stopped
