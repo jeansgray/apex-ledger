@@ -58,6 +58,7 @@ services:
       MIROFISH_DEFAULT_SIMULATION_ID: sim_apex_personal_investor
       APEX_DATA_DIR: /app/data
       APEX_LEDGER_DB: /app/data/ledger.db
+      APEX_PUBLIC_BASE_URL: http://127.0.0.1:8080
     ports:
       - "8080:8080"
     volumes:

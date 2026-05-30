@@ -193,10 +193,25 @@ curl -s http://127.0.0.1:8080/config | python3 -m json.tool
 
 ```bash
 cp examples/holdings.example.csv my_holdings.csv
-# edit: symbol, quantity, cost_basis, account
 python3 scripts/import_personal_ledger.py my_holdings.csv
-# or: uv run apex-ledger import-ledger my_holdings.csv
 ```
+
+### OAuth sync (recommended)
+
+**Plaid (banks + some investment accounts):**
+
+1. Create a app at [Plaid Dashboard](https://dashboard.plaid.com/)
+2. Add to `.env`: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=sandbox`
+3. Restart Apex → **Connect bank** in the UI → **Sync now**
+
+**Charles Schwab (brokerage OAuth):**
+
+1. Register at [Schwab Developer Portal](https://developer.schwab.com/)
+2. Set callback URL to `http://127.0.0.1:8080/oauth/schwab/callback` (must match exactly)
+3. Add to `.env`: `SCHWAB_APP_KEY`, `SCHWAB_APP_SECRET`, `APEX_PUBLIC_BASE_URL=http://127.0.0.1:8080`
+4. Restart Apex → **Connect Schwab** → **Sync Schwab**
+
+CSV import remains available as backup under the Schwab card in the UI.
 
 Restart Apex (or `docker compose restart apex`) and run **Analyze** again. The UI status pill switches from **Demo portfolio** to **Your portfolio**.
 

@@ -272,12 +272,23 @@
             <button class="btn-ghost" type="button" id="plaid-disconnect-btn" hidden>Disconnect</button>
           </div>
         </div>
+        <div class="integr-card" id="schwab-card">
+          <strong>Charles Schwab (OAuth)</strong>
+          <span id="schwab-status" class="hint" style="display:block;margin:0.35rem 0">Checking…</span>
+          <div class="toolbar" style="margin-top:0.5rem">
+            <button class="btn-ok" type="button" id="schwab-connect-btn" hidden>Connect Schwab</button>
+            <button class="btn-ghost" type="button" id="schwab-sync-btn" hidden>Sync Schwab</button>
+            <button class="btn-ghost" type="button" id="schwab-disconnect-btn" hidden>Disconnect</button>
+          </div>
+          <details class="mini" style="margin-top:0.5rem">
+            <summary>CSV backup import</summary>
+            <label class="hint" for="schwab-upload">Schwab Positions/Transactions export</label>
+            <input id="schwab-upload" type="file" accept=".csv,text/csv" />
+          </details>
+        </div>
         <div class="integr-card">
-          <strong>Charles Schwab</strong>
-          <span class="hint" style="display:block;margin:0.35rem 0">Export Positions or Transactions from Schwab.com → upload CSV. Live Schwab API OAuth is not wired yet.</span>
-          <label class="hint" for="schwab-upload">Schwab CSV export</label>
-          <input id="schwab-upload" type="file" accept=".csv,text/csv" />
-          <label class="hint" for="csv-upload" style="margin-top:0.5rem">Generic holdings CSV</label>
+          <strong>Generic CSV</strong>
+          <label class="hint" for="csv-upload">Holdings CSV (<code>symbol, quantity, cost_basis, account</code>)</label>
           <input id="csv-upload" type="file" accept=".csv,text/csv" />
         </div>
       </div>
@@ -828,6 +839,11 @@
     }
 
     function renderIntegrationControls(integrations) {
+      renderPlaidControls(integrations);
+      renderSchwabControls(integrations);
+    }
+
+    function renderPlaidControls(integrations) {
       const statusEl = document.getElementById("plaid-status");
       const connectBtn = document.getElementById("plaid-connect-btn");
       const syncBtn = document.getElementById("plaid-sync-btn");
@@ -837,7 +853,7 @@
       disconnectBtn.hidden = true;
 
       if (!integrations.plaid_configured) {
-        statusEl.textContent = "Add PLAID_CLIENT_ID and PLAID_SECRET to .env, restart Apex, then connect.";
+        statusEl.textContent = "Add PLAID_CLIENT_ID and PLAID_SECRET to .env, restart Apex.";
         return;
       }
       if (integrations.plaid_connected) {
@@ -845,7 +861,30 @@
         syncBtn.hidden = false;
         disconnectBtn.hidden = false;
       } else {
-        statusEl.textContent = "Plaid ready — connect your checking or investment accounts.";
+        statusEl.textContent = "Plaid ready — connect checking or investment accounts.";
+        connectBtn.hidden = false;
+      }
+    }
+
+    function renderSchwabControls(integrations) {
+      const statusEl = document.getElementById("schwab-status");
+      const connectBtn = document.getElementById("schwab-connect-btn");
+      const syncBtn = document.getElementById("schwab-sync-btn");
+      const disconnectBtn = document.getElementById("schwab-disconnect-btn");
+      connectBtn.hidden = true;
+      syncBtn.hidden = true;
+      disconnectBtn.hidden = true;
+
+      if (!integrations.schwab_configured) {
+        statusEl.textContent = "Add SCHWAB_APP_KEY and SCHWAB_APP_SECRET to .env (developer.schwab.com).";
+        return;
+      }
+      if (integrations.schwab_connected) {
+        statusEl.textContent = "Schwab connected via OAuth.";
+        syncBtn.hidden = false;
+        disconnectBtn.hidden = false;
+      } else {
+        statusEl.textContent = "Schwab OAuth ready — register callback: " + (integrations.schwab_callback_url || "");
         connectBtn.hidden = false;
       }
     }
@@ -995,6 +1034,31 @@
       document.getElementById("ledger-status").textContent = "Plaid disconnected.";
       loadLedger();
     });
+
+    document.getElementById("schwab-connect-btn").addEventListener("click", () => {
+      window.open("/oauth/schwab/start", "schwab_oauth", "width=600,height=700");
+    });
+    document.getElementById("schwab-sync-btn").addEventListener("click", async () => {
+      const status = document.getElementById("ledger-status");
+      try {
+        const res = await api("/integrations/schwab/sync", { method: "POST" });
+        status.textContent = "Schwab sync — " + (res.synced?.holdings || 0) + " holdings, " + (res.synced?.transactions || 0) + " transactions.";
+        loadLedger();
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+    document.getElementById("schwab-disconnect-btn").addEventListener("click", async () => {
+      await api("/integrations/schwab", { method: "DELETE" });
+      document.getElementById("ledger-status").textContent = "Schwab disconnected.";
+      loadLedger();
+    });
+
+    if (new URLSearchParams(location.search).get("schwab") === "connected") {
+      document.getElementById("ledger-status").textContent = "Schwab connected — click Sync Schwab to import holdings.";
+      history.replaceState({}, "", "/");
+      loadLedger();
+    }
 
     document.getElementById("reset-demo-btn").addEventListener("click", async () => {
       if (!confirm("Replace your portfolio with the demo sample (VTI, AAPL, BND)?")) return;

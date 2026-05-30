@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import date
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -15,6 +15,7 @@ from ..config import get_settings
 from ..council.brief import ensure_friendly_brief
 from ..council.graph import CouncilOrchestrator
 from ..integrations.plaid_client import PlaidClient, PlaidError
+from ..integrations.schwab_client import SchwabClient, SchwabError
 from ..integrations.schwab_import import parse_schwab_csv
 from ..integrations.store import IntegrationStore
 
@@ -64,15 +65,27 @@ def _plaid_client() -> PlaidClient:
     return PlaidClient(_settings.plaid_client_id, _settings.plaid_secret, _settings.plaid_env)
 
 
+def _schwab_client() -> SchwabClient:
+    return SchwabClient(
+        _settings.schwab_app_key,
+        _settings.schwab_app_secret,
+        _settings.schwab_redirect_uri,
+    )
+
+
 def _integrations_status() -> dict:
     store = _integration_store()
     plaid = store.get_plaid()
+    schwab = store.get_schwab()
     return {
         "plaid_configured": bool(_settings.plaid_client_id and _settings.plaid_secret),
         "plaid_connected": bool(plaid and plaid.get("access_token")),
         "plaid_institution": (plaid or {}).get("institution", ""),
-        "schwab_import": "csv",
-        "schwab_api": "csv_only",
+        "schwab_configured": bool(_settings.schwab_app_key and _settings.schwab_app_secret),
+        "schwab_connected": bool(schwab and schwab.get("access_token")),
+        "schwab_callback_url": _settings.schwab_redirect_uri,
+        "schwab_import": "csv_backup",
+        "schwab_oauth": "trader_api",
     }
 
 
@@ -314,6 +327,80 @@ def plaid_sync() -> dict:
 @app.delete("/integrations/plaid")
 def plaid_disconnect() -> dict:
     _integration_store().clear_plaid()
+    return {"ok": True}
+
+
+@app.get("/oauth/schwab/start")
+def schwab_oauth_start() -> RedirectResponse:
+    try:
+        client = _schwab_client()
+    except SchwabError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    state = _integration_store().create_oauth_state("schwab")
+    return RedirectResponse(client.authorize_url(state))
+
+
+@app.get("/oauth/schwab/callback")
+def schwab_oauth_callback(code: str = "", state: str = "", error: str = "") -> HTMLResponse:
+    if error:
+        return HTMLResponse(
+            f"<html><body><p>Schwab authorization failed: {error}</p>"
+            f'<p><a href="/">Back to Apex Ledger</a></p></body></html>',
+            status_code=400,
+        )
+    if not code or not _integration_store().consume_oauth_state(state, "schwab"):
+        return HTMLResponse(
+            "<html><body><p>Invalid or expired Schwab OAuth state.</p>"
+            '<p><a href="/">Back to Apex Ledger</a></p></body></html>',
+            status_code=400,
+        )
+    try:
+        tokens = _schwab_client().exchange_code(code)
+        _integration_store().set_schwab(tokens)
+    except SchwabError as exc:
+        return HTMLResponse(
+            f"<html><body><p>Schwab token exchange failed: {exc}</p>"
+            f'<p><a href="/">Back to Apex Ledger</a></p></body></html>',
+            status_code=400,
+        )
+    return HTMLResponse(
+        "<html><body><p>Schwab connected. You can close this tab and click "
+        "<strong>Sync Schwab</strong> in Apex Ledger.</p>"
+        '<script>if (window.opener) { window.opener.location="/?schwab=connected"; window.close(); }</script>'
+        '<p><a href="/?schwab=connected">Continue to dashboard</a></p></body></html>'
+    )
+
+
+@app.post("/integrations/schwab/sync")
+def schwab_sync() -> dict:
+    store = _integration_store()
+    schwab = store.get_schwab()
+    if not schwab or not schwab.get("access_token"):
+        raise HTTPException(status_code=400, detail="Connect Schwab via OAuth first")
+    try:
+        synced = _schwab_client().sync_ledger_data(dict(schwab))
+    except SchwabError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    store.set_schwab(synced["tokens"])
+    if synced["holdings"]:
+        _orchestrator.ledger.replace_holdings(synced["holdings"])
+    tx_count = 0
+    if synced["transactions"]:
+        tx_count = _orchestrator.ledger.import_transactions_bulk(synced["transactions"])
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["synced"] = {
+        "holdings": len(synced["holdings"]),
+        "transactions": tx_count,
+        "accounts": synced.get("accounts", 0),
+    }
+    detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    detail["integrations"] = _integrations_status()
+    return detail
+
+
+@app.delete("/integrations/schwab")
+def schwab_disconnect() -> dict:
+    _integration_store().clear_schwab()
     return {"ok": True}
 
 

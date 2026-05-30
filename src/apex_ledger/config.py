@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     plaid_secret: str = ""
     plaid_env: str = "sandbox"
     apex_integrations_file: Path = Path("./data/integrations.json")
+    apex_public_base_url: str = "http://127.0.0.1:8080"
+
+    schwab_app_key: str = ""
+    schwab_app_secret: str = ""
+    schwab_callback_url: str = ""
+
+    @property
+    def schwab_redirect_uri(self) -> str:
+        if self.schwab_callback_url:
+            return self.schwab_callback_url
+        return f"{self.apex_public_base_url.rstrip('/')}/oauth/schwab/callback"
 
     def ensure_dirs(self) -> None:
         self.apex_data_dir.mkdir(parents=True, exist_ok=True)
