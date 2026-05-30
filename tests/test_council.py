@@ -6,7 +6,11 @@ from apex_ledger.council.graph import CouncilOrchestrator
 
 def test_council_run_without_mirofish(tmp_path):
     db = tmp_path / "ledger.db"
-    settings = Settings(apex_ledger_db=db, mirofish_default_simulation_id="")
+    settings = Settings(
+        apex_ledger_db=db,
+        mirofish_default_simulation_id="",
+        apex_use_live_simulation=False,
+    )
     orchestrator = CouncilOrchestrator(settings)
     state = orchestrator.run(
         user_question="How would a rate cut affect my ETF-heavy portfolio?",

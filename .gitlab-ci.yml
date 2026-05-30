@@ -1,0 +1,15 @@
+# Minimal pytest CI — mirrors .github/workflows/ci.yml
+image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+stages:
+  - test
+
+variables:
+  APEX_USE_LIVE_SIMULATION: "false"
+  UV_LINK_MODE: copy
+
+test:
+  stage: test
+  script:
+    - uv sync --extra dev
+    - uv run pytest tests/ -q
