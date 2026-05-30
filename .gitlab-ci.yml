@@ -7,6 +7,13 @@ stages:
 variables:
   APEX_USE_LIVE_SIMULATION: "false"
   UV_LINK_MODE: copy
+  # Tests use fixture mode; MiroFish submodule is optional for CI.
+  GIT_SUBMODULE_STRATEGY: none
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 test:
   stage: test
