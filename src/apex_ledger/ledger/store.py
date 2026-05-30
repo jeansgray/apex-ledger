@@ -1,0 +1,184 @@
+"""SQLite ledger store for personal investor data."""
+
+from __future__ import annotations
+
+import sqlite3
+from contextlib import contextmanager
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+from .models import Holding, Transaction, TransactionStatus
+
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS holdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    quantity REAL NOT NULL,
+    cost_basis REAL,
+    account TEXT NOT NULL DEFAULT 'default'
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    posted_on TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount REAL NOT NULL,
+    account TEXT NOT NULL DEFAULT 'default',
+    category TEXT,
+    status TEXT NOT NULL DEFAULT 'unmatched',
+    memo TEXT
+);
+
+CREATE TABLE IF NOT EXISTS decision_memos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    council_run_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    approved INTEGER NOT NULL,
+    payload_json TEXT NOT NULL
+);
+"""
+
+
+class LedgerStore:
+    def __init__(self, db_path: Path) -> None:
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._init_schema()
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_schema(self) -> None:
+        with self._connect() as conn:
+            conn.executescript(SCHEMA)
+
+    @contextmanager
+    def connection(self):
+        conn = self._connect()
+        try:
+            yield conn
+            conn.commit()
+        finally:
+            conn.close()
+
+    def seed_demo_data(self) -> None:
+        """Load sample holdings and unmatched transactions for local dev."""
+        with self.connection() as conn:
+            if conn.execute("SELECT COUNT(*) FROM holdings").fetchone()[0]:
+                return
+            conn.executemany(
+                "INSERT INTO holdings (symbol, quantity, cost_basis, account) VALUES (?, ?, ?, ?)",
+                [
+                    ("VTI", 120.0, 28500.0, "brokerage"),
+                    ("AAPL", 25.0, 4200.0, "brokerage"),
+                    ("BND", 80.0, 6400.0, "brokerage"),
+                ],
+            )
+            conn.executemany(
+                """
+                INSERT INTO transactions
+                (posted_on, description, amount, account, category, status, memo)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    ("2026-05-01", "DIVIDEND VTI", 42.15, "brokerage", "dividend", "reconciled", None),
+                    ("2026-05-12", "ADOBE *CREATIVE CLD", -59.99, "checking", None, "unmatched", None),
+                    ("2026-05-18", "TRANSFER TO BROKERAGE", -500.0, "checking", None, "unmatched", None),
+                ],
+            )
+
+    def list_holdings(self) -> list[Holding]:
+        with self.connection() as conn:
+            rows = conn.execute("SELECT * FROM holdings ORDER BY symbol").fetchall()
+        return [
+            Holding(
+                symbol=row["symbol"],
+                quantity=row["quantity"],
+                cost_basis=row["cost_basis"],
+                account=row["account"],
+            )
+            for row in rows
+        ]
+
+    def list_transactions(self, status: TransactionStatus | None = None) -> list[Transaction]:
+        query = "SELECT * FROM transactions"
+        params: tuple = ()
+        if status:
+            query += " WHERE status = ?"
+            params = (status.value,)
+        query += " ORDER BY posted_on DESC, id DESC"
+        with self.connection() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [
+            Transaction(
+                id=row["id"],
+                posted_on=date.fromisoformat(row["posted_on"]),
+                description=row["description"],
+                amount=row["amount"],
+                account=row["account"],
+                category=row["category"],
+                status=TransactionStatus(row["status"]),
+                memo=row["memo"],
+            )
+            for row in rows
+        ]
+
+    def portfolio_snapshot(self) -> dict:
+        holdings = self.list_holdings()
+        unmatched = self.list_transactions(TransactionStatus.UNMATCHED)
+        return {
+            "holdings": [h.model_dump() for h in holdings],
+            "unmatched_count": len(unmatched),
+            "total_market_value_estimate": sum(
+                (h.cost_basis or 0.0) for h in holdings
+            ),
+        }
+
+    def apply_reconciliation(
+        self,
+        transaction_id: int,
+        category: str,
+        memo: str | None = None,
+    ) -> None:
+        with self.connection() as conn:
+            conn.execute(
+                """
+                UPDATE transactions
+                SET category = ?, status = 'reconciled', memo = ?
+                WHERE id = ?
+                """,
+                (category, memo, transaction_id),
+            )
+
+    def record_decision_memo(
+        self,
+        council_run_id: str,
+        kind: str,
+        summary: str,
+        approved: bool,
+        payload: dict,
+    ) -> int:
+        import json
+
+        with self.connection() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO decision_memos
+                (council_run_id, created_at, kind, summary, approved, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    council_run_id,
+                    datetime.now(timezone.utc).isoformat(),
+                    kind,
+                    summary,
+                    1 if approved else 0,
+                    json.dumps(payload),
+                ),
+            )
+            return int(cur.lastrowid)

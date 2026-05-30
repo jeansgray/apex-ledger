@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apex Ledger — Your money, explained simply</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5c6b7a;
+      --line: #dde4ee;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --ok: #059669;
+      --ok-soft: #d1fae5;
+      --warn: #d97706;
+      --warn-soft: #fef3c7;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --info-soft: #e0e7ff;
+      font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: white;
+      padding: 1.5rem 1.25rem 2rem;
+    }
+    header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+    header p { margin: 0.4rem 0 0; opacity: 0.92; max-width: 42rem; }
+    main { max-width: 920px; margin: -1rem auto 3rem; padding: 0 1rem; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    textarea, input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.75rem;
+      font: inherit;
+      background: #fbfdff;
+    }
+    textarea:focus, input:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 0.75rem; }
+    .btn-primary:disabled { opacity: 0.6; cursor: wait; }
+    .btn-ok { background: var(--ok); color: white; }
+    .btn-ghost { background: white; border: 1px solid var(--line); color: var(--text); }
+    .status { font-size: 0.875rem; color: var(--muted); margin-top: 0.75rem; min-height: 1.25rem; }
+    .hero h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+    .hero p { margin: 0; color: var(--muted); }
+    .bottom-line {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--accent-soft);
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+    .section-title {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+    }
+    .badge-now { background: var(--danger-soft); color: var(--danger); }
+    .badge-soon { background: var(--warn-soft); color: var(--warn); }
+    .badge-consider { background: var(--info-soft); color: #4338ca; }
+    .badge-done { background: var(--ok-soft); color: var(--ok); }
+    .action-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+    .action-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+      display: grid;
+      gap: 0.5rem;
+    }
+    .action-item.done { opacity: 0.75; background: #f8fafc; }
+    .action-head { display: flex; justify-content: space-between; gap: 0.5rem; align-items: start; }
+    .action-head strong { font-size: 1rem; }
+    .action-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .holdings { display: grid; gap: 0.65rem; }
+    .holding {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.25rem 1rem;
+      padding: 0.85rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+    }
+    .holding .sym { font-weight: 700; font-size: 1.05rem; }
+    .holding .name { color: var(--muted); font-size: 0.875rem; }
+    .holding .meta { grid-column: 1 / -1; font-size: 0.875rem; color: var(--muted); }
+    .scenarios { display: grid; gap: 0.75rem; }
+    @media (min-width: 700px) { .scenarios { grid-template-columns: repeat(3, 1fr); } }
+    .scenario {
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 0.5rem;
+      align-content: start;
+    }
+    .scenario.base { border-top: 4px solid #64748b; }
+    .scenario.upside { border-top: 4px solid var(--ok); background: #f0fdf4; }
+    .scenario.downside { border-top: 4px solid var(--warn); background: #fffbeb; }
+    .scenario .tag { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+    .scenario h3 { margin: 0; font-size: 0.95rem; }
+    .scenario .do {
+      font-size: 0.875rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--line);
+    }
+    .scenario .do strong { color: var(--accent); display: block; margin-bottom: 0.2rem; font-size: 0.75rem; text-transform: uppercase; }
+    .book-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.65rem;
+      background: #fbfdff;
+    }
+    .book-item header { background: none; color: inherit; padding: 0; }
+    .book-item .row { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .book-item .amount { font-weight: 700; font-size: 1.1rem; }
+    .book-item .why { font-size: 0.875rem; color: var(--muted); margin-top: 0.5rem; }
+    .watch { padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 0.5rem; border: 1px solid var(--line); }
+    .watch.info { background: var(--info-soft); }
+    .watch.medium { background: var(--warn-soft); }
+    .watch.low { background: #f8fafc; }
+    .watch strong { display: block; margin-bottom: 0.25rem; }
+    .watch .suggestion { font-size: 0.875rem; margin-top: 0.35rem; color: var(--muted); }
+    .insights { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+    .insights li { margin-bottom: 0.5rem; }
+    details { margin-top: 0.75rem; font-size: 0.875rem; color: var(--muted); }
+    details summary { cursor: pointer; font-weight: 600; color: var(--text); }
+    .gate-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: var(--warn-soft);
+      border: 1px solid #fcd34d;
+    }
+    .gate-box.done { background: var(--ok-soft); border-color: #6ee7b7; }
+    .direct-answer {
+      margin: 1rem 0 0;
+      padding: 1rem 1.1rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      font-size: 1rem;
+    }
+    .direct-answer strong { display: block; margin-bottom: 0.35rem; color: var(--accent); }
+    .keys-banner {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      border: 1px solid var(--line);
+    }
+    .keys-banner.ok { background: var(--ok-soft); border-color: #6ee7b7; }
+    .keys-banner.warn { background: var(--warn-soft); border-color: #fcd34d; }
+    .move-list { display: grid; gap: 0.75rem; }
+    .move-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+      display: grid;
+      gap: 0.45rem;
+    }
+    .move-head { display: flex; justify-content: space-between; gap: 0.75rem; align-items: start; }
+    .move-symbol {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .move-title { margin: 0.15rem 0 0; font-size: 1.05rem; }
+    .move-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--muted); }
+    .move-meta span {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+    }
+    .move-citation {
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-left: 3px solid var(--accent-soft);
+      padding-left: 0.65rem;
+      margin-top: 0.25rem;
+    }
+    .sim-status {
+      font-size: 0.875rem;
+      color: var(--muted);
+      padding: 0.65rem 0.85rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px dashed var(--line);
+      margin-bottom: 0.75rem;
+    }
+    .row-2 { display: grid; gap: 0.75rem; }
+    @media (min-width: 640px) { .row-2 { grid-template-columns: 1fr 160px; align-items: end; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Apex Ledger</h1>
+    <p>Plain-language guidance for your investments and everyday money — with clear next steps, not jargon.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <label for="question">What do you want to understand?</label>
+      <textarea id="question" rows="3" placeholder="Example: If interest rates drop, what might happen to my ETF portfolio?">How would a Fed rate cut affect my ETF-heavy portfolio?</textarea>
+      <p class="hint">Ask in everyday language. We'll connect it to your holdings and a what-if scenario.</p>
+      <details>
+        <summary>Advanced options</summary>
+        <div class="row-2" style="margin-top:0.75rem">
+          <div>
+            <label for="cash">New money to deploy ($)</label>
+            <input id="cash" type="number" min="100" step="100" value="1000" />
+            <p class="hint">Used to size suggested buy/hold/trim amounts — not a real trade.</p>
+          </div>
+          <div>
+            <label for="simulation-id">Scenario simulation ID</label>
+            <input id="simulation-id" placeholder="Leave blank to use default" />
+          </div>
+        </div>
+      </details>
+      <div id="keys-banner" class="keys-banner warn" hidden></div>
+      <button class="btn-primary" id="run-btn">Get my summary & action list</button>
+      <p class="status" id="status"></p>
+    </section>
+
+    <div id="results" hidden>
+      <section class="panel hero" id="hero"></section>
+
+      <section class="panel" id="moves-section">
+        <h2 class="section-title">Suggested moves <span class="badge badge-now">Review first</span></h2>
+        <p class="hint" style="margin-bottom:0.75rem">
+          Simulation-informed ideas for your portfolio — approve to save; nothing trades automatically.
+        </p>
+        <div id="sim-status" class="sim-status" hidden></div>
+        <div class="move-list" id="suggested-moves"></div>
+        <div id="moves-gate" hidden></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Your action list</h2>
+        <p class="hint" id="action-hint">Work top to bottom — items marked “Do first” matter most.</p>
+        <ul class="action-list" id="actions"></ul>
+      </section>
+
+      <section class="panel" id="research-section">
+        <h2 class="section-title">Key things to know</h2>
+        <ul class="insights" id="research"></ul>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Your investments at a glance</h2>
+        <p id="portfolio-summary" class="hint" style="margin-bottom:0.75rem"></p>
+        <div class="holdings" id="holdings"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Three ways things could play out</h2>
+        <p class="hint" style="margin-bottom:0.75rem">Not predictions — helpful frames so you can prepare without panic.</p>
+        <div class="scenarios" id="scenarios"></div>
+        <div id="scenario-gate" hidden></div>
+      </section>
+
+      <section class="panel" id="bookkeeping-section">
+        <h2 class="section-title">Fix your records</h2>
+        <p class="hint" style="margin-bottom:0.75rem">We matched bank charges to categories. Confirm so your spending picture stays accurate.</p>
+        <div id="bookkeeping"></div>
+        <div id="recon-gate" hidden></div>
+      </section>
+
+      <section class="panel" id="watch-section">
+        <h2 class="section-title">Watch out for</h2>
+        <div id="watch-outs"></div>
+      </section>
+
+      <section class="panel" id="insights-section">
+        <h2 class="section-title">Extra context for your situation</h2>
+        <ul class="insights" id="insights"></ul>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    let currentRunId = null;
+    let currentState = null;
+    let refreshTimer = null;
+    let appConfig = {};
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!res.ok) throw new Error(await res.text() || res.statusText);
+      return res.json();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function priorityBadge(priority, done) {
+      if (done) return '<span class="badge badge-done">Done</span>';
+      if (priority === "now") return '<span class="badge badge-now">Do first</span>';
+      if (priority === "soon") return '<span class="badge badge-soon">When you can</span>';
+      return '<span class="badge badge-consider">Think about</span>';
+    }
+
+    function gateApproved(kind) {
+      const gate = currentState?.human_gates?.find(g => g.kind === kind);
+      return gate && gate.approved !== null;
+    }
+
+    function actionLabel(action) {
+      const labels = { buy: "Buy", hold: "Hold", reduce: "Trim", allocate_cash: "Save cash" };
+      return labels[action] || action;
+    }
+
+    function confidenceLabel(value) {
+      const pct = Math.round(Number(value || 0) * 100);
+      if (pct >= 75) return "High confidence";
+      if (pct >= 60) return "Moderate confidence";
+      return "Lower confidence";
+    }
+
+    function renderKeysBanner(keys) {
+      const el = document.getElementById("keys-banner");
+      if (!keys) { el.hidden = true; return; }
+      el.hidden = false;
+      if (keys.valid) {
+        el.className = "keys-banner ok";
+        el.innerHTML = "<strong>Live simulation ready</strong> — LLM and Zep keys are configured. New questions can spawn fresh MiroFish runs (may take several minutes).";
+      } else {
+        el.className = "keys-banner warn";
+        el.innerHTML = "<strong>Demo mode</strong> — Add real <code>LLM_API_KEY</code> and <code>ZEP_API_KEY</code> to <code>.env</code>, then run <code>python3 scripts/configure_keys.py</code>. Until then we use the seeded demo simulation.";
+      }
+    }
+
+    function renderSimulationStatus(state) {
+      const el = document.getElementById("sim-status");
+      const factory = state.simulation_factory || {};
+      if (state.status === "simulation_running" || factory.status === "running") {
+        el.hidden = false;
+        el.textContent = factory.message || "Building your MiroFish simulation — suggested moves will refresh when it finishes.";
+        return;
+      }
+      if (factory.status === "fixture") {
+        el.hidden = false;
+        el.textContent = factory.message || "Using demo simulation.";
+        return;
+      }
+      if (factory.status === "ready" || factory.status === "cached") {
+        el.hidden = false;
+        el.textContent = factory.message || ("Simulation " + (factory.simulation_id || state.simulation_id) + " ready.");
+        return;
+      }
+      el.hidden = true;
+    }
+
+    function renderSuggestedMoves(state, brief) {
+      const moves = brief.suggested_moves || state.suggested_moves || [];
+      const section = document.getElementById("moves-section");
+      section.hidden = moves.length === 0;
+      renderSimulationStatus(state);
+      document.getElementById("suggested-moves").innerHTML = moves.map(move => {
+        const amount = move.amount_usd != null
+          ? '<span>$' + Number(move.amount_usd).toLocaleString() + "</span>"
+          : "";
+        const alloc = move.allocation_pct != null
+          ? "<span>" + Number(move.allocation_pct).toFixed(0) + "% of new money</span>"
+          : "";
+        return '<article class="move-card"><div class="move-head"><div><div class="move-symbol">' +
+          escapeHtml(move.symbol) + " · " + escapeHtml(actionLabel(move.action)) +
+          '</div><h3 class="move-title">' + escapeHtml(move.title) +
+          '</h3></div><span class="badge badge-consider">' + escapeHtml(confidenceLabel(move.confidence)) +
+          '</span></div><p class="hint" style="margin:0">' + escapeHtml(move.rationale) +
+          '</p><div class="move-meta">' + amount + alloc +
+          '</div>' + (move.simulation_citation
+            ? '<div class="move-citation"><strong>From simulation:</strong> ' + escapeHtml(move.simulation_citation) + "</div>"
+            : "") + "</article>";
+      }).join("");
+      renderGate(
+        "moves-gate",
+        "investment_moves",
+        "Save these suggested moves?",
+        "Yes, save to my decision log",
+        "Skip for now"
+      );
+    }
+
+    function scheduleRefresh(state) {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+      if (state.status !== "simulation_running" || !currentRunId) return;
+      refreshTimer = setInterval(async () => {
+        try {
+          const updated = await api("/council/run/" + currentRunId + "/refresh", { method: "POST" });
+          renderResults(updated);
+          if (updated.status !== "simulation_running" && refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+          }
+        } catch (err) {
+          console.warn("refresh failed", err);
+        }
+      }, 8000);
+    }
+
+    function buildBriefFromState(state) {
+      const brief = { ...(state.friendly_brief || {}) };
+      const topic = state.topic_analysis || {};
+
+      if (!brief.headline) {
+        brief.headline = (topic.topic_label || "Your question") + ": what we found";
+      }
+      if (!brief.intro) {
+        brief.intro = 'You asked: "' + state.user_question + '". Here is a plain-English summary and next steps.';
+      }
+      if (!brief.direct_answer) {
+        brief.direct_answer = topic.direct_answer || "Review the scenarios and action list below for practical next steps.";
+      }
+      if (!brief.bottom_line) {
+        brief.bottom_line = "Take your time — start with items marked Do first.";
+      }
+      if (!brief.portfolio_summary && state.portfolio_snapshot) {
+        const h = state.portfolio_snapshot.holdings || [];
+        brief.portfolio_summary = "You have " + h.length + " holding(s) on file.";
+      }
+      if ((!brief.holdings || brief.holdings.length === 0) && state.portfolio_snapshot?.holdings) {
+        brief.holdings = state.portfolio_snapshot.holdings.map(h => ({
+          symbol: h.symbol,
+          name: h.symbol,
+          quantity: h.quantity,
+          cost_label: "$" + Number(h.cost_basis || 0).toLocaleString(),
+          account: h.account || "default",
+        }));
+      }
+      if ((!brief.scenarios || brief.scenarios.length === 0) && state.scenario_brief) {
+        brief.scenarios = [
+          { key: "base", label: "Most likely", headline: "Base case", explanation: state.scenario_brief.base, what_you_might_do: "Review and decide if this fits your timeline." },
+          { key: "upside", label: "Best case", headline: "Upside", explanation: state.scenario_brief.upside, what_you_might_do: "Plan calmly if things go well." },
+          { key: "downside", label: "Worst case", headline: "Downside", explanation: state.scenario_brief.downside, what_you_might_do: "Protect cash needs first." },
+        ];
+      }
+      if ((!brief.research_plain || brief.research_plain.length === 0) && state.research_notes?.length) {
+        brief.research_plain = state.research_notes;
+      }
+      if ((!brief.insights_plain || brief.insights_plain.length === 0) && state.simulation_insights?.length) {
+        brief.insights_plain = state.simulation_insights;
+      }
+      if (!brief.action_items || brief.action_items.length === 0) {
+        brief.action_items = [
+          { priority: "now", title: "Save this plan", detail: "Keep today's summary for later.", cta_label: "Save summary", gate_kind: "scenario_brief" },
+        ];
+      }
+      if ((!brief.suggested_moves || brief.suggested_moves.length === 0) && state.suggested_moves?.length) {
+        brief.suggested_moves = state.suggested_moves;
+      }
+      return brief;
+    }
+
+    function renderGate(containerId, kind, title, approveLabel, rejectLabel) {
+      const el = document.getElementById(containerId);
+      const gate = currentState?.human_gates?.find(g => g.kind === kind);
+      if (!gate || gate.approved !== null) {
+        el.hidden = true;
+        if (gate && gate.approved === true) {
+          el.hidden = false;
+          el.className = "gate-box done";
+          el.innerHTML = "<strong>Done</strong> — " + escapeHtml(title);
+        }
+        return;
+      }
+      el.hidden = false;
+      el.className = "gate-box";
+      el.innerHTML =
+        "<strong>" + escapeHtml(title) + "</strong>" +
+        '<p class="hint" style="margin:0.5rem 0 0.75rem">' + escapeHtml(gate.summary) + "</p>" +
+        '<div class="action-btns">' +
+        '<button class="btn-ok" data-gate="' + kind + '" data-approved="true">' + escapeHtml(approveLabel) + "</button>" +
+        '<button class="btn-ghost" data-gate="' + kind + '" data-approved="false">' + escapeHtml(rejectLabel) + "</button>" +
+        "</div>";
+      el.querySelectorAll("[data-gate]").forEach(btn => {
+        btn.onclick = () => approveGate(kind, btn.dataset.approved === "true");
+      });
+    }
+
+    function renderResults(state) {
+      currentState = state;
+      const brief = buildBriefFromState(state);
+      const results = document.getElementById("results");
+      results.hidden = false;
+      results.style.display = "block";
+
+      document.getElementById("hero").innerHTML =
+        "<h2>" + escapeHtml(brief.headline) + "</h2>" +
+        "<p>" + escapeHtml(brief.intro) + "</p>" +
+        (brief.direct_answer
+          ? '<div class="direct-answer"><strong>Direct answer</strong>' + escapeHtml(brief.direct_answer) + "</div>"
+          : "") +
+        '<div class="bottom-line"><strong>Bottom line:</strong> ' + escapeHtml(brief.bottom_line) + "</div>";
+
+      renderSuggestedMoves(state, brief);
+
+      document.getElementById("portfolio-summary").textContent = brief.portfolio_summary || "";
+
+      document.getElementById("holdings").innerHTML = (brief.holdings || []).map(h =>
+        '<div class="holding"><div><div class="sym">' + escapeHtml(h.symbol) + '</div><div class="name">' +
+        escapeHtml(h.name) + '</div></div><div style="text-align:right"><div>' + escapeHtml(h.quantity) +
+        ' shares</div><div class="name">Paid ~' + escapeHtml(h.cost_label) + '</div></div><div class="meta">Account: ' +
+        escapeHtml(h.account) + "</div></div>"
+      ).join("") || '<p class="empty">No holdings on file yet.</p>';
+
+      document.getElementById("actions").innerHTML = (brief.action_items || []).map(item => {
+        const done = item.gate_kind ? gateApproved(item.gate_kind) : false;
+        const scrollTarget = item.gate_kind === "reconciliation" ? "recon-gate" : "scenario-gate";
+        const btns = item.gate_kind && !done
+          ? '<div class="action-btns"><button class="btn-ok" type="button" data-scroll="' + scrollTarget + '">' +
+            escapeHtml(item.cta_label || "Review") + "</button></div>"
+          : "";
+        return '<li class="action-item' + (done ? " done" : "") + '"><div class="action-head"><strong>' +
+          escapeHtml(item.title) + "</strong>" + priorityBadge(item.priority, done) +
+          '</div><p class="hint" style="margin:0">' + escapeHtml(item.detail) + "</p>" + btns + "</li>";
+      }).join("");
+
+      document.querySelectorAll("[data-scroll]").forEach(btn => {
+        btn.onclick = () => document.getElementById(btn.dataset.scroll).scrollIntoView({ behavior: "smooth" });
+      });
+
+      const research = brief.research_plain || [];
+      document.getElementById("research-section").hidden = research.length === 0;
+      document.getElementById("research").innerHTML = research.map(r => "<li>" + escapeHtml(r) + "</li>").join("");
+
+      document.getElementById("scenarios").innerHTML = (brief.scenarios || []).map(s =>
+        '<article class="scenario ' + escapeHtml(s.key) + '"><div class="tag">' + escapeHtml(s.label) +
+        "</div><h3>" + escapeHtml(s.headline) + "</h3><p>" + escapeHtml(s.explanation) +
+        '</p><div class="do"><strong>What you might do</strong>' + escapeHtml(s.what_you_might_do) + "</div></article>"
+      ).join("");
+
+      const book = brief.bookkeeping || [];
+      document.getElementById("bookkeeping-section").hidden = book.length === 0;
+      document.getElementById("bookkeeping").innerHTML = book.map(b =>
+        '<div class="book-item"><div class="row"><div><strong>' + escapeHtml(b.description) +
+        '</strong><div class="hint">' + escapeHtml(b.date) + " · " + escapeHtml(b.category_label) +
+        '</div></div><div class="amount">' + escapeHtml(b.amount_label) +
+        '</div></div><div class="why"><em>' + escapeHtml(b.confidence_label) + "</em> — " +
+        escapeHtml(b.why) + "</div></div>"
+      ).join("");
+
+      const watches = brief.watch_outs || [];
+      document.getElementById("watch-section").hidden = watches.length === 0;
+      document.getElementById("watch-outs").innerHTML = watches.map(w =>
+        '<div class="watch ' + escapeHtml(w.severity) + '"><strong>' + escapeHtml(w.title) +
+        "</strong><div>" + escapeHtml(w.detail) + '</div><div class="suggestion"><strong>Suggestion:</strong> ' +
+        escapeHtml(w.suggestion) + "</div></div>"
+      ).join("");
+
+      const insights = brief.insights_plain || [];
+      document.getElementById("insights-section").hidden = insights.length === 0;
+      document.getElementById("insights").innerHTML = insights.map(i => "<li>" + escapeHtml(i) + "</li>").join("");
+
+      renderGate("recon-gate", "reconciliation", "Ready to save these categories?", "Yes, update my records", "Not yet");
+      renderGate("scenario-gate", "scenario_brief", "Save this scenario summary?", "Yes, save for later", "Skip for now");
+      scheduleRefresh(state);
+    }
+
+    async function runCouncil() {
+      const btn = document.getElementById("run-btn");
+      const status = document.getElementById("status");
+      btn.disabled = true;
+      status.textContent = "Analyzing your question…";
+      try {
+        const state = await api("/council/run", {
+          method: "POST",
+          body: JSON.stringify({
+            question: document.getElementById("question").value,
+            simulation_id: document.getElementById("simulation-id").value || null,
+            seed_demo: true,
+            cash_to_deploy: Number(document.getElementById("cash").value) || 1000,
+            use_live_simulation: true,
+          }),
+        });
+        currentRunId = state.run_id;
+        renderResults(state);
+        status.textContent = state.status === "simulation_running"
+          ? "Live simulation running — suggested moves will update automatically."
+          : state.status === "completed"
+          ? "All set — you've worked through today's action items."
+          : "Scroll down for suggested moves and your action list.";
+        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function approveGate(kind, approved) {
+      if (!currentRunId) return;
+      const status = document.getElementById("status");
+      try {
+        const state = await api("/council/run/" + currentRunId + "/approve", {
+          method: "POST",
+          body: JSON.stringify({ gate_kind: kind, approved }),
+        });
+        renderResults(state);
+        status.textContent = state.status === "completed"
+          ? "Nice work — your records and scenario notes are saved."
+          : "One step down. Check what's left on your action list.";
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+        console.error(err);
+      }
+    }
+
+    document.getElementById("run-btn").addEventListener("click", runCouncil);
+
+    api("/config").then(cfg => {
+      appConfig = cfg;
+      if (cfg.default_simulation_id) {
+        document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
+      }
+      if (cfg.default_cash_to_deploy) {
+        document.getElementById("cash").value = cfg.default_cash_to_deploy;
+      }
+      renderKeysBanner(cfg.keys);
+    }).catch(() => {});
+  </script>
+</body>
+</html>

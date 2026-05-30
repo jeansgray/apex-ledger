@@ -1,77 +1,136 @@
 # Apex Ledger — setup checklist
 
-## 1. Xcode Command Line Tools (required for `git`)
+Use this when onboarding a new machine or a collaborator.
 
-**Status:** Installed (`/Library/Developer/CommandLineTools`). Verify anytime:
+## 1. Clone the repo
 
 ```bash
-git --version
-xcode-select -p
+git clone --recurse-submodules https://gitlab.com/jeansgray/apex-ledger.git
+cd apex-ledger
 ```
 
-If `git` fails again, run `xcode-select --install` or:
+If you already cloned without submodules:
 
 ```bash
-sudo softwareupdate --install "Command Line Tools for Xcode 26.5-26.5" --verbose
-```
-
-## 2. Shell PATH
-
-Add to `~/.zshrc` (create the file if needed):
-
-```bash
-source ~/.local/bin/env.sh
-```
-
-Open a new terminal tab, then:
-
-```bash
-which gh uv node npx
-```
-
-## 3. GitLab (primary remote)
-
-- **Remote:** `https://gitlab.com/jeansgray/apex-ledger.git` (or SSH `git@gitlab.com:jeansgray/apex-ledger.git`)
-- **CLI:** `glab` in `~/.local/bin` — run `glab auth login --web` or approve OAuth in Cursor (**Settings → Tools & MCP → GitLab**).
-- **MCP:** GitLab plugin uses HTTP `https://gitlab.com/api/v4/mcp` (OAuth via Cursor; no `GITHUB_TOKEN`).
-
-Create the project on GitLab first if it does not exist: **New project → Create blank project → name `apex-ledger`**.
-
-## 4. Push to GitLab
-
-After `glab auth status` shows a valid token:
-
-```bash
-cd ~/Projects/apex-ledger
-git push -u origin main
-```
-
-Or: `glab repo create jeansgray/apex-ledger --private` then push.
-
-## 5. MiroFish submodule
-
-**Status:** `vendor/mirofish` is added and initialized (commit `1f7bba0` on `main`).
-
-To refresh later:
-
-```bash
-cd ~/Projects/apex-ledger
 git submodule update --init --recursive
 ```
 
-## 6. GitHub token for MCP
+## 2. System prerequisites
 
-Create a fine-grained or classic PAT at https://github.com/settings/tokens with `repo` scope (for private repos).
+| Requirement | Check |
+|-------------|--------|
+| Git + Xcode CLT (macOS) | `git --version` |
+| **uv** | `uv --version` — install from https://docs.astral.sh/uv/ |
+| Python **3.11+** (Apex) | `uv python install 3.11` |
+| Python **3.12** (MiroFish) | `uv python install 3.12` |
+| Node **18+** (MiroFish tooling) | `node -v` |
+
+Add local bins to PATH in `~/.zshrc` if needed:
 
 ```bash
-echo 'export GITHUB_TOKEN="ghp_..."' >> ~/.zshrc
-source ~/.zshrc
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Restart **Cursor** so `~/.cursor/mcp.json` loads Git + GitHub MCP servers.
+## 3. API keys (live MiroFish simulations)
 
-## 7. MiroFish runtime (when you run simulations)
+**Required for live sims only.** Demo fixture mode works without them.
 
-- Node 18+ (installed at `~/.local/bin/node`)
-- Python 3.11–3.12 + `uv` (installed)
-- Copy `vendor/mirofish/.env.example` → `vendor/mirofish/.env` and add LLM + Zep keys
+| Key | Sign up | Env var |
+|-----|---------|---------|
+| OpenAI (or OpenAI-compatible LLM) | https://platform.openai.com/api-keys | `LLM_API_KEY` |
+| Zep Cloud | https://app.getzep.com/ | `ZEP_API_KEY` |
+
+Setup:
+
+```bash
+cp .env.example .env
+# Edit .env — paste keys (never commit this file)
+python3 scripts/configure_keys.py
+```
+
+This writes:
+
+- `~/.config/apex-ledger/mirofish.env` (chmod 600)
+- `vendor/mirofish/.env` (copy for the backend process)
+
+Verify from Apex:
+
+```bash
+curl -s http://127.0.0.1:8080/health | python3 -m json.tool
+# "keys": { "valid": true, ... }
+```
+
+**Security:** Do not paste keys in chat, issues, or MRs. Rotate any key that was exposed.
+
+## 4. Run services
+
+**Terminal 1 — MiroFish** (port 5001):
+
+```bash
+uv sync
+python3 scripts/setup_mirofish.py
+UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend python run.py
+```
+
+**Terminal 2 — Apex Ledger** (port 8080):
+
+```bash
+uv sync --extra dev
+uv run apex-ledger serve --port 8080
+```
+
+Open http://127.0.0.1:8080
+
+## 5. Cursor MCP (contributors)
+
+For GitLab issues, MRs, and CI from Cursor:
+
+1. Install/enable the **GitLab** plugin in Cursor.
+2. **Settings → Tools & MCP → GitLab** — OAuth login **or** PAT via env (`GITLAB_TOKEN`).
+3. Optional: **Git** MCP for local repo operations.
+4. **Restart Cursor** after MCP changes.
+
+See [GITLAB_SETUP.md](GITLAB_SETUP.md) for PAT vs OAuth and `~/.cursor/mcp.json` examples.
+
+GitLab CLI (optional):
+
+```bash
+glab auth login --web
+glab auth status
+```
+
+## 6. GitLab remote
+
+- **HTTPS:** `https://gitlab.com/jeansgray/apex-ledger.git`
+- **SSH:** `git@gitlab.com:jeansgray/apex-ledger.git`
+
+Push after auth:
+
+```bash
+git push -u origin main
+```
+
+## 7. MiroFish submodule
+
+`vendor/mirofish` is an AGPL submodule — HTTP boundary only; do not import it from `src/apex_ledger/`.
+
+Refresh:
+
+```bash
+git submodule update --init --recursive
+```
+
+Seeded read-only fixture (no live keys): `sim_apex_personal_investor`
+
+Optional one-shot live bootstrap (long-running):
+
+```bash
+python3 scripts/bootstrap_personal_investor_simulation.py
+```
+
+## 8. What's not wired yet
+
+- Real personal holdings / profile (demo ledger is seeded)
+- Production deployment / auth
+
+Track progress in GitLab issues on the project board.

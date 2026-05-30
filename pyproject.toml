@@ -1,0 +1,41 @@
+[project]
+name = "apex-ledger"
+version = "0.1.0"
+description = "Personal investor finance platform — scenario council + ledger reconciliation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-dotenv>=1.0",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+curate = [
+    "datasets>=3.0",
+    "huggingface-hub>=0.24",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+apex-ledger = "apex_ledger.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/apex_ledger"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

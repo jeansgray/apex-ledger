@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "description": "Curated SkillMD imports for Apex Council roles. Populated by scripts/curate_skillmd.py.",
+  "skills": []
+}

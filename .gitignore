@@ -1,3 +1,18 @@
+# Local runtime
+.env
+data/
+*.db
+skills/manifest.candidates.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+
 # Local secrets (never commit)
 .config/
 *.local.env
