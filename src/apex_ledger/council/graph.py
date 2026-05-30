@@ -198,14 +198,23 @@ class CouncilOrchestrator:
             cached = self._runs.get(state.run_id)
             if not cached:
                 return
+            fixture = self.settings.mirofish_default_simulation_id or "sim_apex_personal_investor"
+            sim_id = result.simulation_id or fixture
+            if result.status == "failed":
+                sim_id = fixture
+                result = FactoryResult(
+                    simulation_id=sim_id,
+                    status="fixture",
+                    message=result.message or f"Using demo simulation {sim_id}.",
+                    cache_key=result.cache_key,
+                )
             cached.simulation_factory = {
                 "status": result.status,
                 "message": result.message,
                 "cache_key": result.cache_key,
-                "simulation_id": result.simulation_id,
+                "simulation_id": sim_id,
             }
-            if result.simulation_id:
-                cached.simulation_id = result.simulation_id
+            cached.simulation_id = sim_id
             self.refresh_run(state.run_id)
 
         result = self.factory.resolve_simulation(

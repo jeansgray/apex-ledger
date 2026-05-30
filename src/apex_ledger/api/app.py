@@ -31,7 +31,7 @@ class CouncilRunRequest(BaseModel):
     simulation_id: str | None = None
     seed_demo: bool = True
     cash_to_deploy: float = Field(default=1000.0, gt=0)
-    use_live_simulation: bool = True
+    use_live_simulation: bool | None = None
 
 
 class GateApprovalRequest(BaseModel):
@@ -123,6 +123,7 @@ def public_config() -> dict:
         "ledger_mode": "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal",
         "holdings_count": len(_orchestrator.ledger.list_holdings()),
         "integrations": _integrations_status(),
+        "use_live_simulation": _settings.apex_use_live_simulation,
         "collaborator_parity": {
             "same_dashboard": "yes_when_all_services_run",
             "same_output": "same_question_same_holdings_same_keys_mode",

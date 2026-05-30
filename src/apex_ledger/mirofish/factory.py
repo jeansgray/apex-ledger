@@ -18,6 +18,7 @@ from .keys import load_mirofish_keys
 POLL_SECONDS = 5
 MAX_WAIT_SECONDS = 3600
 DEFAULT_MAX_ROUNDS = 5
+DEFAULT_FIXTURE_SIMULATION = "sim_apex_personal_investor"
 
 
 @dataclass
@@ -117,18 +118,13 @@ class SimulationFactory:
                 if on_complete:
                     on_complete(result)
             except Exception as exc:  # noqa: BLE001
-                job.status = "failed"
+                result = self._fixture_fallback(cache_key, exc)
+                job.status = result.status
+                job.message = result.message
+                job.simulation_id = result.simulation_id
                 job.error = str(exc)
-                job.message = f"Simulation factory failed: {exc}"
                 if on_complete:
-                    on_complete(
-                        FactoryResult(
-                            simulation_id=None,
-                            status="failed",
-                            message=job.message,
-                            cache_key=cache_key,
-                        )
-                    )
+                    on_complete(result)
 
         thread = threading.Thread(target=runner, daemon=True)
         job._thread = thread
@@ -157,6 +153,27 @@ class SimulationFactory:
             status=job.status,
             message=job.message,
             cache_key=job.cache_key,
+        )
+
+    @staticmethod
+    def _friendly_pipeline_error(exc: Exception) -> str:
+        text = str(exc)
+        if "insufficient_quota" in text or "exceeded your current quota" in text:
+            return "OpenAI API quota exceeded — add billing or switch LLM keys"
+        if "429" in text:
+            return "LLM rate limit hit — retry later or use demo simulation mode"
+        return text[:220]
+
+    def _fixture_fallback(self, cache_key: str, exc: Exception) -> FactoryResult:
+        reason = self._friendly_pipeline_error(exc)
+        return FactoryResult(
+            simulation_id=DEFAULT_FIXTURE_SIMULATION,
+            status="fixture",
+            message=(
+                f"MiroFish live simulation unavailable ({reason}). "
+                f"Using demo simulation {DEFAULT_FIXTURE_SIMULATION}."
+            ),
+            cache_key=cache_key,
         )
 
     def _run_pipeline(self, question: str, topic: TopicAnalysis, cache_key: str) -> FactoryResult:

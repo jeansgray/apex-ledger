@@ -415,6 +415,7 @@
   <script>
     let currentRunId = null;
     let currentState = null;
+    let appConfig = {};
     let refreshTimer = null;
     const chartAnimators = [];
 
@@ -766,7 +767,7 @@
             simulation_id: document.getElementById("simulation-id").value || null,
             seed_demo: true,
             cash_to_deploy: Number(document.getElementById("cash").value) || 1000,
-            use_live_simulation: true,
+            use_live_simulation: appConfig.use_live_simulation !== false,
           }),
         });
         currentRunId = state.run_id;
@@ -800,6 +801,7 @@
     });
 
     api("/config").then(cfg => {
+      appConfig = cfg;
       updateStatusPill(cfg);
       if (cfg.default_simulation_id) document.getElementById("simulation-id").placeholder = cfg.default_simulation_id;
       if (cfg.default_cash_to_deploy) document.getElementById("cash").value = cfg.default_cash_to_deploy;
@@ -820,7 +822,7 @@
         tag.className = "signal-chip signal-aligned";
         tag.textContent = "Personal";
       }
-      if (cfg.keys?.valid) parts.push("Live sim");
+      if (cfg.use_live_simulation && cfg.keys?.valid) parts.push("Live sim");
       else parts.push("Demo sim");
       pill.textContent = parts.join(" · ");
     }
