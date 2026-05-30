@@ -177,7 +177,6 @@ class SimulationFactory:
         )
 
     def _run_pipeline(self, question: str, topic: TopicAnalysis, cache_key: str) -> FactoryResult:
-        keys = load_mirofish_keys()
         brief_path = self._write_brief(question, topic)
         requirement = self._simulation_requirement(question, topic)
 

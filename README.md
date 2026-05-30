@@ -4,6 +4,8 @@ Personal investor platform: **Kronos quant forecasts** + **MiroFish narrative si
 
 Built for a single investor (holdings, cash goals, life questions) — not a generic trading bot.
 
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and security review skills.
+
 ## Prerequisites (read this first)
 
 Your friend (or future you) needs all of the following before the app works end-to-end.
