@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,12 +20,36 @@ REQUIREMENT = (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-MIROFISH_UPLOADS = ROOT / "vendor/mirofish/backend/uploads"
 NOW = datetime.now(timezone.utc).isoformat()
 
 
+def _uploads_root() -> Path:
+    return Path(os.environ.get("MIROFISH_UPLOADS", ROOT / "vendor/mirofish/backend/uploads"))
+
+
+def _insights_root() -> Path:
+    return Path(os.environ.get("APEX_INSIGHTS_DIR", ROOT / "data/mirofish_insights"))
+
+
 def main() -> str:
-    sim_dir = MIROFISH_UPLOADS / "simulations" / SIMULATION_ID
+    parser = argparse.ArgumentParser(description="Seed personal-investor MiroFish demo fixture")
+    parser.add_argument("--skip-uploads", action="store_true", help="Only write local insights JSON")
+    parser.add_argument("--skip-insights", action="store_true", help="Only write MiroFish uploads tree")
+    args = parser.parse_args()
+
+    mirofish_uploads = _uploads_root()
+    if not args.skip_uploads:
+        _seed_uploads(mirofish_uploads)
+
+    if not args.skip_insights:
+        _seed_insights(_insights_root())
+
+    print(SIMULATION_ID)
+    return SIMULATION_ID
+
+
+def _seed_uploads(mirofish_uploads: Path) -> None:
+    sim_dir = mirofish_uploads / "simulations" / SIMULATION_ID
     sim_dir.mkdir(parents=True, exist_ok=True)
 
     state = {
@@ -132,7 +158,7 @@ def main() -> str:
         for action in actions:
             f.write(json.dumps(action, ensure_ascii=False) + "\n")
 
-    project_dir = MIROFISH_UPLOADS / "projects" / PROJECT_ID
+    project_dir = mirofish_uploads / "projects" / PROJECT_ID
     project_dir.mkdir(parents=True, exist_ok=True)
     project = {
         "project_id": PROJECT_ID,
@@ -162,7 +188,7 @@ def main() -> str:
         encoding="utf-8",
     )
 
-    report_dir = MIROFISH_UPLOADS / "reports" / REPORT_ID
+    report_dir = mirofish_uploads / "reports" / REPORT_ID
     report_dir.mkdir(parents=True, exist_ok=True)
     summary = (
         "Retail personas split: equity holders see near-term relief, bond holders fear "
@@ -197,7 +223,8 @@ def main() -> str:
     (report_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     (report_dir / "full_report.md").write_text(markdown, encoding="utf-8")
 
-    insights = ROOT / "data" / "mirofish_insights"
+
+def _seed_insights(insights: Path) -> None:
     insights.mkdir(parents=True, exist_ok=True)
     (insights / f"{SIMULATION_ID}.json").write_text(
         json.dumps(
@@ -213,9 +240,6 @@ def main() -> str:
         ),
         encoding="utf-8",
     )
-
-    print(SIMULATION_ID)
-    return SIMULATION_ID
 
 
 if __name__ == "__main__":

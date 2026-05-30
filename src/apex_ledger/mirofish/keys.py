@@ -10,7 +10,14 @@ from dotenv import dotenv_values
 
 MIROFISH_ENV = Path.home() / ".config" / "apex-ledger" / "mirofish.env"
 VENDOR_ENV = Path(__file__).resolve().parents[3] / "vendor" / "mirofish" / ".env"
-PLACEHOLDERS = ("dev-placeholder", "your_api_key", "your_zep", "REPLACE_WITH", "your_base_url")
+PLACEHOLDERS = (
+    "dev-placeholder",
+    "demo-placeholder",
+    "your_api_key",
+    "your_zep",
+    "REPLACE_WITH",
+    "your_base_url",
+)
 
 
 @dataclass

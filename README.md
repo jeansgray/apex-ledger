@@ -86,21 +86,38 @@ Ask the owner for **Developer** access if the project is private. Static onboard
 
 Do **not** import MiroFish Python modules into `src/apex_ledger/`. Run MiroFish as a separate service and call it over HTTP (`MIROFISH_BASE_URL`).
 
-## Docker (repeatable collaborator path)
+## Docker Compose quick start
 
-Install [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) (or Linux/Windows equivalents), then from the repo root:
+Install [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/) (Mac/Windows/Linux), then from the repo root:
 
 ```bash
+git clone --recurse-submodules https://gitlab.com/jeansgray/apex-ledger.git
+cd apex-ledger
+# already cloned without submodules?
 git submodule update --init --recursive
+
 cp .env.example .env
-# optional: add LLM_API_KEY / ZEP_API_KEY, then python3 scripts/configure_keys.py
 docker compose up --build
 ```
 
-- Apex UI: http://127.0.0.1:8080  
-- MiroFish: http://127.0.0.1:5001  
+Open **http://127.0.0.1:8080** (Apex council UI). MiroFish runs at **http://127.0.0.1:5001** (AGPL backend — HTTP only).
 
-Secrets load from mounted `.env` only — never bake keys into images. See [SETUP.md](SETUP.md) for details.
+| Mode | Keys in `.env` | What you get |
+|------|----------------|--------------|
+| **Demo** (default) | leave `LLM_API_KEY` / `ZEP_API_KEY` empty | Full council UI + seeded fixture `sim_apex_personal_investor` (read-only sim APIs) |
+| **Live sim** | real `LLM_API_KEY` + `ZEP_API_KEY` | Background MiroFish runs for new topics (5–15 min); add keys to `.env` then `docker compose up --build` |
+
+Demo fixtures auto-seed on first container start (`data/` ledger + MiroFish uploads). Optional host-side re-seed:
+
+```bash
+python3 scripts/setup_mirofish.py --no-start   # or: python3 scripts/seed_personal_investor_simulation.py
+```
+
+For **live** keys when running locally (non-Docker), also run `python3 scripts/configure_keys.py` — it syncs into `vendor/mirofish/.env`. In Docker, `.env` is injected via `env_file`; editing `.env` and restarting is enough.
+
+Stop: `docker compose down`. Ledger SQLite persists in `./data/ledger.db`.
+
+See [SETUP.md](SETUP.md) for the full checklist (keys, persistence, healthchecks).
 
 ## Quick start (uv, local)
 

@@ -17,7 +17,8 @@ services:
     ports:
       - "5001:5001"
     volumes:
-      - ./vendor/mirofish/backend/app/uploads:/app/app/uploads
+      # MiroFish config resolves uploads to backend/uploads (../uploads from app/)
+      - ./vendor/mirofish/backend/uploads:/app/uploads
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:5001/health"]
@@ -35,6 +36,7 @@ services:
       - .env
     environment:
       MIROFISH_BASE_URL: http://mirofish:5001
+      MIROFISH_DEFAULT_SIMULATION_ID: sim_apex_personal_investor
       APEX_DATA_DIR: /app/data
       APEX_LEDGER_DB: /app/data/ledger.db
     ports:

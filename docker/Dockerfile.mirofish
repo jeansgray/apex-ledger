@@ -10,6 +10,7 @@ WORKDIR /app
 
 COPY vendor/mirofish/backend/pyproject.toml vendor/mirofish/backend/uv.lock vendor/mirofish/backend/run.py ./
 COPY vendor/mirofish/backend/app ./app
+COPY scripts/seed_personal_investor_simulation.py ./scripts/
 
 RUN uv sync --frozen
 

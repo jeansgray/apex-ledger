@@ -10,8 +10,13 @@ COPY skills ./skills
 COPY scripts ./scripts
 COPY .cursor/skills ./.cursor/skills
 
+COPY scripts/seed_personal_investor_simulation.py ./scripts/
+
 RUN uv sync --frozen
+
+COPY docker/apex-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "apex_ledger.api.app:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["/entrypoint.sh"]

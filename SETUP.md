@@ -28,21 +28,36 @@ git submodule update --init --recursive
 
 ### Docker Compose (recommended for collaborators)
 
+**Prerequisites:** [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/) — verify with `docker compose version`.
+
 ```bash
 git submodule update --init --recursive
 cp .env.example .env
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| Apex Ledger UI | http://127.0.0.1:8080 |
-| MiroFish backend | http://127.0.0.1:5001 |
+| Service | URL | Notes |
+|---------|-----|-------|
+| Apex Ledger UI | http://127.0.0.1:8080 | Council UI, demo ledger auto-seeds on first run |
+| MiroFish backend | http://127.0.0.1:5001 | AGPL simulation service; Apex calls it over HTTP only |
 
-- `.env` is mounted into containers via `env_file` — do not commit it.
-- Empty `LLM_API_KEY` / `ZEP_API_KEY` use demo placeholders in the MiroFish container; add real keys and run `python3 scripts/configure_keys.py` for live simulations.
-- `data/` is a bind mount so ledger state persists on the host.
-- MiroFish runs as a **separate AGPL service**; Apex talks to it over HTTP only (`MIROFISH_BASE_URL=http://mirofish:5001` inside Compose).
+**Demo mode (no keys):** Leave `LLM_API_KEY` and `ZEP_API_KEY` empty in `.env`. Containers auto-seed the read-only fixture `sim_apex_personal_investor` on first start.
+
+**Live simulations:** Add real keys to `.env`, then rebuild/restart:
+
+```bash
+# optional for local uv runs — syncs vendor/mirofish/.env too:
+python3 scripts/configure_keys.py
+docker compose up --build
+```
+
+**Persistence & mounts:**
+
+- `./data` → SQLite ledger (`ledger.db`) and local insight fallbacks
+- `./vendor/mirofish/backend/uploads` → MiroFish simulation artifacts (live runs write here too)
+- `.env` → injected into both containers via `env_file` (never commit)
+
+**Health:** MiroFish exposes `/health`; Apex waits for it (`depends_on: service_healthy`) before starting.
 
 Stop: `docker compose down`
 
