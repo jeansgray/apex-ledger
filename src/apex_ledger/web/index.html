@@ -258,14 +258,26 @@
         <span id="ledger-mode-tag" class="signal-chip signal-mixed">Demo</span>
       </div>
       <p class="hint">Add your holdings and bank activity here — council forecasts and suggested moves use this data (stored locally in <code>data/ledger.db</code>).</p>
+      <div class="integr-card" style="margin-bottom:0.75rem;border-style:solid">
+        <strong>Collaborator parity</strong>
+        <span class="hint" style="display:block;margin-top:0.35rem">Everyone gets the <em>same dashboard</em> via Docker Compose (Apex + Kronos + MiroFish). Analysis output matches when you use the same question, holdings, and demo/live mode — but each machine keeps its own local ledger unless you import the same CSV or connect your own accounts.</span>
+      </div>
       <div class="integr-row">
-        <div class="integr-card soon" id="plaid-card">
+        <div class="integr-card" id="plaid-card">
           <strong>Bank sync (Plaid)</strong>
-          <span id="plaid-status">Coming soon — add <code>PLAID_CLIENT_ID</code> to <code>.env</code> when ready.</span>
+          <span id="plaid-status" class="hint" style="display:block;margin:0.35rem 0">Checking…</span>
+          <div class="toolbar" style="margin-top:0.5rem">
+            <button class="btn-ok" type="button" id="plaid-connect-btn" hidden>Connect bank</button>
+            <button class="btn-ghost" type="button" id="plaid-sync-btn" hidden>Sync now</button>
+            <button class="btn-ghost" type="button" id="plaid-disconnect-btn" hidden>Disconnect</button>
+          </div>
         </div>
         <div class="integr-card">
-          <strong>Broker / CSV import</strong>
-          <label class="hint" for="csv-upload">Upload holdings CSV (<code>symbol, quantity, cost_basis, account</code>)</label>
+          <strong>Charles Schwab</strong>
+          <span class="hint" style="display:block;margin:0.35rem 0">Export Positions or Transactions from Schwab.com → upload CSV. Live Schwab API OAuth is not wired yet.</span>
+          <label class="hint" for="schwab-upload">Schwab CSV export</label>
+          <input id="schwab-upload" type="file" accept=".csv,text/csv" />
+          <label class="hint" for="csv-upload" style="margin-top:0.5rem">Generic holdings CSV</label>
           <input id="csv-upload" type="file" accept=".csv,text/csv" />
         </div>
       </div>
@@ -388,6 +400,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
   <script>
     let currentRunId = null;
     let currentState = null;
@@ -806,13 +819,59 @@
       try {
         const data = await api("/ledger/detail");
         renderLedgerPanel(data);
+        renderIntegrationControls(data.integrations || {});
         const cfg = await api("/config");
         updateStatusPill(cfg);
-        if (data.integrations?.plaid_configured) {
-          document.getElementById("plaid-status").textContent = "Plaid keys detected — sync UI ships next.";
-        }
       } catch (err) {
         status.textContent = "Could not load portfolio: " + err.message;
+      }
+    }
+
+    function renderIntegrationControls(integrations) {
+      const statusEl = document.getElementById("plaid-status");
+      const connectBtn = document.getElementById("plaid-connect-btn");
+      const syncBtn = document.getElementById("plaid-sync-btn");
+      const disconnectBtn = document.getElementById("plaid-disconnect-btn");
+      connectBtn.hidden = true;
+      syncBtn.hidden = true;
+      disconnectBtn.hidden = true;
+
+      if (!integrations.plaid_configured) {
+        statusEl.textContent = "Add PLAID_CLIENT_ID and PLAID_SECRET to .env, restart Apex, then connect.";
+        return;
+      }
+      if (integrations.plaid_connected) {
+        statusEl.textContent = "Bank connected" + (integrations.plaid_institution ? " (" + integrations.plaid_institution + ")" : "") + ".";
+        syncBtn.hidden = false;
+        disconnectBtn.hidden = false;
+      } else {
+        statusEl.textContent = "Plaid ready — connect your checking or investment accounts.";
+        connectBtn.hidden = false;
+      }
+    }
+
+    async function startPlaidLink() {
+      const status = document.getElementById("ledger-status");
+      try {
+        const { link_token } = await api("/integrations/plaid/link-token", { method: "POST" });
+        if (!window.Plaid) throw new Error("Plaid Link script failed to load");
+        const handler = window.Plaid.create({
+          token: link_token,
+          onSuccess: async (public_token) => {
+            await api("/integrations/plaid/exchange", {
+              method: "POST",
+              body: JSON.stringify({ public_token }),
+            });
+            status.textContent = "Bank connected — click Sync now to import holdings and transactions.";
+            loadLedger();
+          },
+          onExit: (err) => {
+            if (err) status.textContent = "Plaid cancelled or failed.";
+          },
+        });
+        handler.open();
+      } catch (err) {
+        status.textContent = err.message;
       }
     }
 
@@ -895,18 +954,46 @@
     document.getElementById("csv-upload").addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      await uploadLedgerCsv("/ledger/import-csv", file, "Imported generic holdings CSV.");
+      e.target.value = "";
+    });
+
+    document.getElementById("schwab-upload").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await uploadLedgerCsv("/ledger/import-schwab", file, "Imported Schwab export.");
+      e.target.value = "";
+    });
+
+    async function uploadLedgerCsv(path, file, okMsg) {
       const status = document.getElementById("ledger-status");
       const body = new FormData();
       body.append("file", file);
       try {
-        const res = await fetch("/ledger/import-csv", { method: "POST", body });
+        const res = await fetch(path, { method: "POST", body });
         if (!res.ok) throw new Error(await res.text());
-        status.textContent = "Imported holdings from CSV.";
+        status.textContent = okMsg;
         loadLedger();
       } catch (err) {
         status.textContent = err.message;
       }
-      e.target.value = "";
+    }
+
+    document.getElementById("plaid-connect-btn").addEventListener("click", startPlaidLink);
+    document.getElementById("plaid-sync-btn").addEventListener("click", async () => {
+      const status = document.getElementById("ledger-status");
+      try {
+        const res = await api("/integrations/plaid/sync", { method: "POST" });
+        status.textContent = "Plaid sync complete — " + (res.synced?.holdings || 0) + " holdings, " + (res.synced?.transactions || 0) + " transactions.";
+        loadLedger();
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+    document.getElementById("plaid-disconnect-btn").addEventListener("click", async () => {
+      await api("/integrations/plaid", { method: "DELETE" });
+      document.getElementById("ledger-status").textContent = "Plaid disconnected.";
+      loadLedger();
     });
 
     document.getElementById("reset-demo-btn").addEventListener("click", async () => {

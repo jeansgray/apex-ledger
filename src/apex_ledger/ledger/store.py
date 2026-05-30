@@ -111,6 +111,35 @@ class LedgerStore:
             )
             return len(rows)
 
+    def import_transactions_bulk(
+        self,
+        rows: list[tuple[str, str, float, str]],
+    ) -> int:
+        """Insert transactions if not already present. Rows: posted_on, description, amount, account."""
+        inserted = 0
+        with self.connection() as conn:
+            existing = {
+                (r[0], r[1], r[2])
+                for r in conn.execute(
+                    "SELECT posted_on, description, amount FROM transactions"
+                ).fetchall()
+            }
+            for posted_on, description, amount, account in rows:
+                key = (posted_on, description, amount)
+                if key in existing:
+                    continue
+                conn.execute(
+                    """
+                    INSERT INTO transactions
+                    (posted_on, description, amount, account, category, status, memo)
+                    VALUES (?, ?, ?, ?, NULL, 'unmatched', NULL)
+                    """,
+                    (posted_on, description, amount, account),
+                )
+                existing.add(key)
+                inserted += 1
+        return inserted
+
     def is_demo_portfolio(self) -> bool:
         holdings = self.list_holdings()
         if len(holdings) != 3:

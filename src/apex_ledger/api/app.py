@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 from ..config import get_settings
 from ..council.brief import ensure_friendly_brief
 from ..council.graph import CouncilOrchestrator
+from ..integrations.plaid_client import PlaidClient, PlaidError
+from ..integrations.schwab_import import parse_schwab_csv
+from ..integrations.store import IntegrationStore
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
@@ -49,6 +52,30 @@ class TransactionWrite(BaseModel):
     account: str = Field(default="checking", min_length=1)
 
 
+class PlaidExchangeRequest(BaseModel):
+    public_token: str = Field(min_length=1)
+
+
+def _integration_store() -> IntegrationStore:
+    return IntegrationStore(_settings.apex_integrations_file)
+
+
+def _plaid_client() -> PlaidClient:
+    return PlaidClient(_settings.plaid_client_id, _settings.plaid_secret, _settings.plaid_env)
+
+
+def _integrations_status() -> dict:
+    store = _integration_store()
+    plaid = store.get_plaid()
+    return {
+        "plaid_configured": bool(_settings.plaid_client_id and _settings.plaid_secret),
+        "plaid_connected": bool(plaid and plaid.get("access_token")),
+        "plaid_institution": (plaid or {}).get("institution", ""),
+        "schwab_import": "csv",
+        "schwab_api": "csv_only",
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     mirofish_ok = False
@@ -82,6 +109,12 @@ def public_config() -> dict:
         "default_cash_to_deploy": _settings.apex_default_cash_to_deploy,
         "ledger_mode": "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal",
         "holdings_count": len(_orchestrator.ledger.list_holdings()),
+        "integrations": _integrations_status(),
+        "collaborator_parity": {
+            "same_dashboard": "yes_when_all_services_run",
+            "same_output": "same_question_same_holdings_same_keys_mode",
+            "personal_data": "local_per_machine_in_data_ledger_db",
+        },
     }
 
 
@@ -152,10 +185,7 @@ def ledger_detail() -> dict:
     _orchestrator.ledger.seed_demo_data()
     detail = _orchestrator.ledger.ledger_detail()
     detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
-    detail["integrations"] = {
-        "plaid_configured": bool(_settings.plaid_client_id),
-        "broker_sync": "manual",
-    }
+    detail["integrations"] = _integrations_status()
     return detail
 
 
@@ -232,5 +262,78 @@ async def import_holdings_csv(file: UploadFile = File(...)) -> dict:
     count = _orchestrator.ledger.replace_holdings(rows)
     detail = _orchestrator.ledger.ledger_detail()
     detail["imported"] = count
+    detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    return detail
+
+
+@app.get("/integrations/status")
+def integrations_status() -> dict:
+    return _integrations_status()
+
+
+@app.post("/integrations/plaid/link-token")
+def plaid_link_token() -> dict:
+    try:
+        token = _plaid_client().create_link_token()
+    except PlaidError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"link_token": token}
+
+
+@app.post("/integrations/plaid/exchange")
+def plaid_exchange(body: PlaidExchangeRequest) -> dict:
+    try:
+        access_token, item_id = _plaid_client().exchange_public_token(body.public_token)
+        _integration_store().set_plaid(access_token, item_id)
+    except PlaidError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, "item_id": item_id}
+
+
+@app.post("/integrations/plaid/sync")
+def plaid_sync() -> dict:
+    plaid = _integration_store().get_plaid()
+    if not plaid or not plaid.get("access_token"):
+        raise HTTPException(status_code=400, detail="Connect a bank via Plaid first")
+    try:
+        synced = _plaid_client().sync_ledger_data(plaid["access_token"])
+    except PlaidError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if synced["holdings"]:
+        _orchestrator.ledger.replace_holdings(synced["holdings"])
+    tx_count = 0
+    if synced["transactions"]:
+        tx_count = _orchestrator.ledger.import_transactions_bulk(synced["transactions"])
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["synced"] = {"holdings": len(synced["holdings"]), "transactions": tx_count}
+    detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
+    detail["integrations"] = _integrations_status()
+    return detail
+
+
+@app.delete("/integrations/plaid")
+def plaid_disconnect() -> dict:
+    _integration_store().clear_plaid()
+    return {"ok": True}
+
+
+@app.post("/ledger/import-schwab")
+async def import_schwab_csv(file: UploadFile = File(...)) -> dict:
+    raw = (await file.read()).decode("utf-8")
+    try:
+        parsed = parse_schwab_csv(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if parsed["holdings"]:
+        _orchestrator.ledger.replace_holdings(parsed["holdings"])
+    tx_count = 0
+    if parsed["transactions"]:
+        tx_count = _orchestrator.ledger.import_transactions_bulk(parsed["transactions"])
+    detail = _orchestrator.ledger.ledger_detail()
+    detail["imported"] = {
+        "kind": parsed["kind"],
+        "holdings": len(parsed["holdings"]),
+        "transactions": tx_count,
+    }
     detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"
     return detail

@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     # Future bank sync (Plaid) — set in .env when ready
     plaid_client_id: str = ""
     plaid_secret: str = ""
+    plaid_env: str = "sandbox"
+    apex_integrations_file: Path = Path("./data/integrations.json")
 
     def ensure_dirs(self) -> None:
         self.apex_data_dir.mkdir(parents=True, exist_ok=True)

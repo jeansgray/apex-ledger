@@ -95,17 +95,19 @@
     <section id="personal">
       <h2>Your portfolio (not demo data)</h2>
       <div class="card warn">
-        <strong>First launch seeds demo holdings</strong> — VTI, AAPL, BND plus sample bank charges in <code>./data/ledger.db</code>. Forecasts and suggested moves target whatever is in that file until you replace it.
+        <strong>First launch seeds demo holdings</strong> — VTI, AAPL, BND plus sample bank charges in <code>./data/ledger.db</code>. Replace them in the UI or via import/sync below.
       </div>
-      <p>Check mode:</p>
-      <pre><code>curl -s http://127.0.0.1:8080/config | python3 -m json.tool
-# "ledger_mode": "demo" or "personal"</code></pre>
-      <p>Import your holdings from CSV:</p>
-      <pre><code>cp examples/holdings.example.csv my_holdings.csv
-# columns: symbol, quantity, cost_basis, account
-python3 scripts/import_personal_ledger.py my_holdings.csv</code></pre>
-      <p>Restart Apex, open <code>http://127.0.0.1:8080</code>, click <strong>Analyze</strong>. Status pill shows <strong>Your portfolio</strong>. Full details: <a href="https://github.com/jeansgray/apex-ledger/blob/main/SETUP.md#9-personal-portfolio-replace-demo-data">SETUP.md §9</a>.</p>
-      <p><em>Not built yet:</em> broker OAuth, bank sync, or a settings screen — CSV import is the supported path today.</p>
+      <h3>Charles Schwab</h3>
+      <p>Export <strong>Positions</strong> or <strong>Transactions</strong> from Schwab.com and upload in the dashboard (or use the example file in <code>examples/schwab-positions.example.csv</code>). Schwab Trader API OAuth is planned; CSV is supported today.</p>
+      <h3>Bank accounts (Plaid)</h3>
+      <p>Add <code>PLAID_CLIENT_ID</code>, <code>PLAID_SECRET</code>, and <code>PLAID_ENV=sandbox</code> to <code>.env</code>, restart Apex, then use <strong>Connect bank</strong> in the UI. Sync pulls investment holdings and checking transactions into your local ledger.</p>
+      <h3>Will collaborators see the same output?</h3>
+      <div class="card">
+        <p><strong>Same dashboard:</strong> yes — when everyone runs <code>docker compose up --build</code> (Apex + Kronos + MiroFish).</p>
+        <p><strong>Same analysis output:</strong> yes — when they use the same question, same holdings, and same demo vs live key mode.</p>
+        <p><strong>Same personal data:</strong> no by default — each machine has its own <code>data/ledger.db</code>. Share a Schwab/CSV export or use demo mode for identical sample output.</p>
+      </div>
+      <p>Check mode: <code>curl -s http://127.0.0.1:8080/config | python3 -m json.tool</code></p>
     </section>
 
     <section id="repos">
