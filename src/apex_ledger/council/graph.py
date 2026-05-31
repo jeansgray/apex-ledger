@@ -13,6 +13,7 @@ from ..data.fred import FredClient
 from ..data.finnhub import FinnhubClient
 from ..data.glossary import extract_terms
 from ..data.web_search import ComplianceSearchClient
+from ..data.you_search import YouSearchClient
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -80,6 +81,10 @@ class CouncilOrchestrator:
         self.compliance_search = ComplianceSearchClient(
             settings.search_api_key,
             cache_dir=settings.apex_data_dir / "search_cache",
+        )
+        self.you_search = YouSearchClient(
+            settings.you_api_key,
+            cache_dir=settings.apex_data_dir / "you_cache",
         )
         self._runs: dict[str, CouncilRunState] = {}
 
@@ -374,6 +379,10 @@ class CouncilOrchestrator:
             state.research_notes.extend(surprises)
             finnhub_count += len(ratings) + len(surprises)
 
+        # You.com: live financial news from Seeking Alpha, Fool, Finbold, etc.
+        you_bullets = self.you_search.news_for_symbols(symbols)
+        state.research_notes.extend(you_bullets)
+
         parts = []
         if news:
             parts.append(f"{len(news)} AV news")
@@ -385,6 +394,8 @@ class CouncilOrchestrator:
             parts.append(f"{len(macro_bullets)} FRED macro indicators")
         if finnhub_count:
             parts.append(f"{finnhub_count} Finnhub analyst data point(s)")
+        if you_bullets:
+            parts.append(f"{len(you_bullets)} You.com news")
         state.agent_outputs["research_curator"] = (
             f"Research: {', '.join(parts)}." if parts else "Research: no live data available."
         )
