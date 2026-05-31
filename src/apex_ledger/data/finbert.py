@@ -14,18 +14,34 @@ from typing import Any
 _pipeline = None  # lazy singleton
 
 
-def _get_pipeline():
-    global _pipeline
-    if _pipeline is None:
-        from transformers import pipeline  # noqa: PLC0415
+_load_failed = False  # set True if load times out or errors, to skip future attempts
 
-        _pipeline = pipeline(
+
+def _get_pipeline():
+    global _pipeline, _load_failed
+    if _load_failed:
+        return None
+    if _pipeline is not None:
+        return _pipeline
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+    from transformers import pipeline  # noqa: PLC0415
+
+    def _load():
+        return pipeline(
             "text-classification",
             model="ProsusAI/finbert",
             tokenizer="ProsusAI/finbert",
-            device=-1,  # CPU
-            top_k=None,  # return all 3 labels
+            device=-1,
+            top_k=None,
         )
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            future = ex.submit(_load)
+            _pipeline = future.result(timeout=30)
+    except (FuturesTimeout, Exception):
+        _load_failed = True
+        return None
     return _pipeline
 
 
@@ -51,6 +67,8 @@ class FinBertScorer:
 
         try:
             pipe = _get_pipeline()
+            if pipe is None:
+                raise RuntimeError("FinBERT pipeline unavailable")
             # Truncate to 512 tokens max
             results = pipe(text[:512], truncation=True)[0]
             scores = {r["label"].lower(): round(r["score"], 4) for r in results}
