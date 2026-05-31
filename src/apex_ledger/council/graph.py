@@ -11,6 +11,8 @@ from ..data.alpha_vantage import AlphaVantageClient
 from ..data.stocktwits import StockTwitsClient
 from ..data.fred import FredClient
 from ..data.finnhub import FinnhubClient
+from ..data.glossary import extract_terms
+from ..data.web_search import ComplianceSearchClient
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -75,6 +77,10 @@ class CouncilOrchestrator:
             settings.finnhub_api_key,
             cache_dir=settings.apex_data_dir / "finnhub_cache",
         )
+        self.compliance_search = ComplianceSearchClient(
+            settings.search_api_key,
+            cache_dir=settings.apex_data_dir / "search_cache",
+        )
         self._runs: dict[str, CouncilRunState] = {}
 
     def run(
@@ -107,6 +113,7 @@ class CouncilOrchestrator:
             self._run_compliance_skeptic(state, topic)
             self._run_scenario_synthesizer(state, topic)
             self._run_recommendation_engine(state, topic)
+            state.glossary = extract_terms(state.research_notes + state.risk_flags + state.simulation_insights)
             state.friendly_brief = build_friendly_brief(state, topic).model_dump()
             state.status = "awaiting_human" if state.simulation_factory.get("status") != "running" else "simulation_running"
         except Exception as exc:  # noqa: BLE001
@@ -413,6 +420,19 @@ class CouncilOrchestrator:
         state.risk_flags.append(
             "Suggested moves are simulation-informed decision support — not guaranteed returns or regulated advice."
         )
+
+        # Web search: regulatory, legal, and tax risk per holding
+        symbols = list(dict.fromkeys(h["symbol"] for h in state.portfolio_snapshot.get("holdings", [])))
+        web_flags = self.compliance_search.compliance_flags(symbols)
+        state.risk_flags.extend(web_flags)
+        if web_flags:
+            state.agent_outputs["compliance_skeptic"] = (
+                f"Flagged {len(web_flags)} web-sourced compliance risk(s) across holdings."
+            )
+        else:
+            state.agent_outputs["compliance_skeptic"] = (
+                "Compliance check complete — no web search key configured or no results found."
+            )
 
     def _run_scenario_synthesizer(self, state: CouncilRunState, topic: TopicAnalysis) -> None:
         state.scenario_brief = {

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     alpha_vantage_api_key: str = ""
     finnhub_api_key: str = ""
     fred_api_key: str = ""
+    search_api_key: str = ""
 
     # Future bank sync (Plaid) — set in .env when ready
     plaid_client_id: str = ""
