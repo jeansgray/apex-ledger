@@ -10,6 +10,7 @@ from ..config import Settings
 from ..data.alpha_vantage import AlphaVantageClient
 from ..data.stocktwits import StockTwitsClient
 from ..data.fred import FredClient
+from ..data.finbert import FinBertScorer
 from ..data.finnhub import FinnhubClient
 from ..data.glossary import extract_terms
 from ..data.reddit import RedditSentimentClient
@@ -91,6 +92,9 @@ class CouncilOrchestrator:
         )
         self.reddit = RedditSentimentClient(
             cache_dir=settings.apex_data_dir / "reddit_cache",
+        )
+        self.finbert = FinBertScorer(
+            cache_dir=settings.apex_data_dir / "finbert_cache",
         )
         self._runs: dict[str, CouncilRunState] = {}
 
@@ -485,6 +489,7 @@ class CouncilOrchestrator:
                 you_search=self.you_search,
                 forecast_days=self.settings.kronos_forecast_days,
                 social_trending=trending,
+                finbert=self.finbert,
             )
             state.recommended_buys = [
                 {

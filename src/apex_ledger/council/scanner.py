@@ -1,33 +1,25 @@
 """Stock universe scanner — scores and ranks buy candidates.
 
-Scoring rubric (0–100):
+Scoring rubric (0–105):
   Kronos momentum direction:  up=40, flat=10, down=0
   Kronos return_pct:          scaled 0–25 (capped at 15% return)
   Finnhub analyst consensus:  strong_buy*3 + buy*1, scaled 0–25
-  You.com news presence:      has_news=5, bullish_keywords=5
+  FinBERT news sentiment:     positive=+10, negative=-5, neutral=0 (was keyword heuristic)
+  Social mentions bonus:      0–5
 
 Top-scoring stocks become "recommended buys".
 """
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..data.finbert import FinBertScorer
     from ..data.finnhub import FinnhubClient
     from ..data.you_search import YouSearchClient
     from ..kronos.client import KronosClient
-
-BULLISH_WORDS = re.compile(
-    r'\b(surge|soar|rally|beat|record|upgrade|buy|bullish|outperform|strong|growth|breakout)\b',
-    re.IGNORECASE,
-)
-BEARISH_WORDS = re.compile(
-    r'\b(downgrade|miss|fall|drop|cut|sell|bearish|lawsuit|investigation|recall|loss)\b',
-    re.IGNORECASE,
-)
 
 
 @dataclass
@@ -51,6 +43,7 @@ def score_universe(
     you_search: "YouSearchClient",
     forecast_days: int = 30,
     social_trending: list[dict] | None = None,
+    finbert: "FinBertScorer | None" = None,
 ) -> list[StockScore]:
     """Score and rank a list of symbols. Returns sorted list, best first."""
     social_map = {item["symbol"]: item["mentions"] for item in (social_trending or [])}
@@ -109,7 +102,7 @@ def score_universe(
         except Exception:
             pass
 
-        # ── You.com news sentiment (0–10) ──
+        # ── News + FinBERT sentiment (0–10) ──
         top_headline = ""
         headline_url = ""
         try:
@@ -122,17 +115,25 @@ def score_universe(
                 top = news[0]
                 top_headline = top.get("title", "")
                 headline_url = top.get("url", "")
-                # Sentiment nudge
-                all_text = " ".join(
-                    (n.get("title", "") + " " + n.get("description", "")) for n in news[:3]
-                )
-                bullish = len(BULLISH_WORDS.findall(all_text))
-                bearish = len(BEARISH_WORDS.findall(all_text))
-                if bullish > bearish:
-                    score += 5
-                    reasons.append("Positive news sentiment")
-                elif bearish > bullish:
-                    score -= 5
+                if finbert is not None:
+                    # Aggregate FinBERT sentiment across top 3 headlines
+                    texts = [
+                        (n.get("title", "") + " " + n.get("description", "")).strip()
+                        for n in news[:3]
+                    ]
+                    sentiment_scores = [finbert.sentiment_float(t) for t in texts if t]
+                    avg_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
+                    if avg_sentiment > 0.15:
+                        pts = min(10, round(avg_sentiment * 10))
+                        score += pts
+                        reasons.append(f"FinBERT: positive news ({avg_sentiment:+.2f})")
+                    elif avg_sentiment < -0.15:
+                        score -= 5
+                        reasons.append(f"FinBERT: negative news ({avg_sentiment:+.2f})")
+                    else:
+                        reasons.append(f"FinBERT: neutral news ({avg_sentiment:+.2f})")
+                else:
+                    reasons.append("News present (no FinBERT)")
         except Exception:
             pass
 

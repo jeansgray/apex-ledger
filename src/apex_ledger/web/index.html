@@ -444,6 +444,14 @@
     }
     .news-item:last-child { border-bottom: 0; }
     .news-item-actions { display: flex; align-items: flex-start; gap: 0.3rem; margin-left: auto; padding-left: 0.4rem; flex-shrink: 0; }
+    .sentiment-badge {
+      display: inline-flex; align-items: center; gap: 0.2rem;
+      font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.12rem 0.4rem; border-radius: 999px; flex-shrink: 0;
+    }
+    .sentiment-badge.positive { background: rgba(52,211,153,0.12); color: var(--ok); }
+    .sentiment-badge.negative { background: rgba(248,113,113,0.12); color: var(--danger); }
+    .sentiment-badge.neutral { background: rgba(139,156,179,0.08); color: var(--muted); }
     .news-item {
       display: flex; gap: 0.65rem; padding: 0.65rem 0;
       border-bottom: 1px solid var(--line);
@@ -1029,11 +1037,13 @@
       grid.innerHTML = buys.map((b, i) => {
         const pctCls = b.direction === "up" ? "up" : "flat";
         const pctStr = b.direction === "up" ? "+" + b.return_pct.toFixed(1) + "% / " + b.horizon_days + "d" : "Flat";
+        const badge = b.reasoning ? sentimentBadge(b.reasoning) : "";
         return '<div class="rec-item' + (i === 0 ? " top-pick" : "") + '">' +
           '<div class="rec-rank">' + (i === 0 ? "🏆 Top Pick" : "#" + (i + 1)) + '</div>' +
           '<div class="rec-symbol">' + esc(b.symbol) + '</div>' +
           '<div class="rec-score">' + b.score.toFixed(0) + '/100</div>' +
           '<div class="rec-pct ' + pctCls + '">' + esc(pctStr) + '</div>' +
+          (badge ? '<div style="margin-top:0.3rem">' + badge + '</div>' : '') +
           (b.analyst_note ? '<div class="rec-analyst">' + esc(b.analyst_note) + '</div>' : '') +
           (b.top_headline ? '<div class="rec-headline">' + esc(b.top_headline) + '</div>' : '') +
           (b.social_mentions ? '<div class="rec-social">' + b.social_mentions + ' social mentions</div>' : '') +
@@ -1085,10 +1095,20 @@
       const analyst = notes.filter(n => /^\[analyst\]|\[earnings\]/i.test(n));
       const macro = notes.filter(n => /^\[macro\]/i.test(n));
 
+      function sentimentBadge(text) {
+        // Detect FinBERT signal in text
+        const posMatch = text.match(/FinBERT:\s*positive[^(]*\(([^)]+)\)/i);
+        const negMatch = text.match(/FinBERT:\s*negative[^(]*\(([^)]+)\)/i);
+        const neuMatch = text.match(/FinBERT:\s*neutral[^(]*\(([^)]+)\)/i);
+        if (posMatch) return '<span class="sentiment-badge positive">&#9650; Bullish ' + posMatch[1] + '</span>';
+        if (negMatch) return '<span class="sentiment-badge negative">&#9660; Bearish ' + negMatch[1] + '</span>';
+        if (neuMatch) return '<span class="sentiment-badge neutral">&#9654; Neutral</span>';
+        return "";
+      }
+
       function newsHtml(items, dotCls) {
         if (!items.length) return '<p class="empty">None available.</p>';
         return items.map(n => {
-          // Parse "SOURCE: title. desc Source: url" format
           const srcMatch = n.match(/^\[([^\]]+)\]/);
           const src = srcMatch ? srcMatch[1] : "data";
           const body = n.replace(/^\[[^\]]+\]\s*/, "");
@@ -1097,8 +1117,8 @@
           const text = body.replace(/\s*Source:\s*https?:\/\/\S+/i, "").trim();
           return '<div class="news-item">' +
             '<div class="news-dot ' + dotCls + '"></div>' +
-            '<div class="news-body">' +
-            '<div class="news-source">' + esc(src) + '</div>' +
+            '<div class="news-body" style="flex:1;min-width:0">' +
+            '<div class="news-source" style="display:flex;gap:0.4rem;align-items:center">' + esc(src) + '</div>' +
             '<div class="news-text">' + esc(text) + '</div>' +
             (url ? '<a class="news-link" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url.replace(/^https?:\/\//, "").split("/")[0]) + '</a>' : "") +
             '</div></div>';
