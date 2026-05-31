@@ -94,9 +94,52 @@
       display: grid;
       gap: 1.25rem;
     }
-    @media (min-width: 960px) {
-      .results-grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+
+    /* ── Horizontal forecast ticker strip ── */
+    .forecast-strip {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding-bottom: 0.4rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line) transparent;
     }
+    .forecast-strip::-webkit-scrollbar { height: 4px; }
+    .forecast-strip::-webkit-scrollbar-track { background: transparent; }
+    .forecast-strip::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+    .forecast-tile {
+      flex: 0 0 auto;
+      width: 160px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.7rem 0.75rem 0.5rem;
+      transition: border-color 0.15s, transform 0.12s;
+      cursor: default;
+    }
+    .forecast-tile:hover { border-color: rgba(99,102,241,0.45); transform: translateY(-2px); }
+    .forecast-tile.up-tile { border-top: 2px solid var(--ok); }
+    .forecast-tile.down-tile { border-top: 2px solid var(--danger); }
+    .forecast-tile.flat-tile { border-top: 2px solid var(--muted); }
+    .ftile-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+    .ftile-sym { font-weight: 900; font-size: 1rem; letter-spacing: 0.02em; }
+    .ftile-badge {
+      font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 0.12rem 0.4rem; border-radius: 999px;
+    }
+    .ftile-badge.up { background: rgba(52,211,153,0.15); color: var(--ok); }
+    .ftile-badge.down { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .ftile-badge.flat { background: rgba(139,156,179,0.1); color: var(--muted); }
+    .ftile-price { font-size: 0.88rem; font-weight: 700; color: var(--fg); margin-bottom: 0.1rem; }
+    .ftile-pred { font-size: 0.72rem; color: var(--muted); }
+    .ftile-pred .up { color: var(--ok); font-weight: 700; }
+    .ftile-pred .down { color: var(--danger); font-weight: 700; }
+    .ftile-chart { margin-top: 0.45rem; height: 56px; }
+    .ftile-chart .chart-box { height: 56px; }
+    .ftile-pct { font-size: 0.7rem; font-weight: 800; margin-top: 0.3rem; }
+    .ftile-pct.up { color: var(--ok); }
+    .ftile-pct.down { color: var(--danger); }
+    .ftile-pct.flat { color: var(--muted); }
     .card {
       background: var(--surface);
       border: 1px solid var(--line);
@@ -129,19 +172,50 @@
     .signal-mixed { background: rgba(251,191,36,0.12); color: var(--warn); }
     .signal-narrative { background: rgba(99,102,241,0.12); color: #a5b4fc; }
     .forecast-item {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--line);
+      padding: 0.7rem 0.75rem;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      margin-bottom: 0.5rem;
+      transition: border-color 0.15s;
     }
-    .forecast-item:last-child { border-bottom: 0; padding-bottom: 0; }
-    .forecast-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; }
-    .forecast-top .sym { font-weight: 800; font-size: 1rem; }
-    .forecast-top .pct { font-size: 0.85rem; font-weight: 700; }
-    .pct.up { color: var(--ok); }
-    .pct.down { color: var(--danger); }
-    .pct.flat { color: var(--muted); }
+    .forecast-item:hover { border-color: rgba(99,102,241,0.4); }
+    .forecast-item:last-child { margin-bottom: 0; }
+    .forecast-item.up-item { border-left: 3px solid var(--ok); }
+    .forecast-item.down-item { border-left: 3px solid var(--danger); }
+    .forecast-item.flat-item { border-left: 3px solid var(--muted); }
+    .forecast-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+    .forecast-top .sym { font-weight: 900; font-size: 1.05rem; letter-spacing: 0.02em; }
+    .forecast-dir-badge {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.18rem 0.5rem; border-radius: 999px;
+    }
+    .forecast-dir-badge.up { background: rgba(52,211,153,0.15); color: var(--ok); }
+    .forecast-dir-badge.down { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .forecast-dir-badge.flat { background: rgba(139,156,179,0.12); color: var(--muted); }
+    .forecast-prices {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8rem; margin-bottom: 0.4rem; color: var(--muted);
+    }
+    .forecast-prices .cur { font-weight: 700; color: var(--fg); font-size: 0.85rem; }
+    .forecast-prices .arr { color: var(--muted); }
+    .forecast-prices .pred { font-weight: 700; font-size: 0.85rem; }
+    .forecast-prices .pred.up { color: var(--ok); }
+    .forecast-prices .pred.down { color: var(--danger); }
+    .forecast-prices .pred.flat { color: var(--muted); }
+    .forecast-meta {
+      display: flex; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;
+    }
+    .fmeta-pill {
+      font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.45rem;
+      border-radius: 999px; background: rgba(255,255,255,0.05);
+      color: var(--muted); border: 1px solid var(--line);
+    }
+    .fmeta-pill.pct-up { color: var(--ok); background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.2); }
+    .fmeta-pill.pct-down { color: var(--danger); background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
     .chart-box {
       position: relative;
-      height: 72px;
+      height: 80px;
       border-radius: 8px;
       background: rgba(0,0,0,0.35);
       overflow: hidden;
@@ -154,7 +228,7 @@
       opacity: 0; transition: opacity 0.12s;
     }
     .chart-box:hover .chart-tip.show { opacity: 1; }
-    .forecast-caption { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; }
+    .forecast-caption { font-size: 0.7rem; color: var(--muted); margin-top: 0.35rem; display: none; }
 
     /* Moves */
     .move {
@@ -452,38 +526,33 @@
         <div class="rec-grid" id="rec-grid"></div>
       </article>
 
-      <div class="results-grid">
-        <!-- LEFT: Verdict → Moves → Actions -->
-        <div class="main-col">
-          <article class="card verdict" id="verdict"></article>
-
-          <article class="card" id="moves-block">
-            <div class="card-head">
-              <h2>Suggested moves</h2>
-              <span class="tag">Review first</span>
-            </div>
-            <div id="sim-banner" class="sim-banner" hidden></div>
-            <div id="suggested-moves"></div>
-            <div id="moves-gate" hidden></div>
-          </article>
-
-          <article class="card">
-            <div class="card-head"><h2>Next steps</h2></div>
-            <div id="actions"></div>
-          </article>
+      <!-- Live Forecasts horizontal strip -->
+      <article class="card" id="forecast-rail" hidden>
+        <div class="card-head" style="margin-bottom:0.6rem">
+          <h2>Live Forecasts</h2>
+          <span id="signal-chip" class="signal-chip signal-aligned" hidden></span>
         </div>
+        <div class="forecast-strip" id="forecasts"></div>
+      </article>
 
-        <!-- RIGHT: Forecast rail (always visible) -->
-        <aside class="forecast-rail" id="forecast-rail">
-          <article class="card">
-            <div class="card-head">
-              <h2>Live forecasts</h2>
-              <span id="signal-chip" class="signal-chip signal-aligned" hidden></span>
-            </div>
-            <p style="margin:0 0 0.75rem;font-size:0.78rem;color:var(--muted)">Animated price paths for your holdings — hover to inspect.</p>
-            <div id="forecasts"></div>
-          </article>
-        </aside>
+      <div class="results-grid">
+        <!-- Verdict → Moves → Actions (full width) -->
+        <article class="card verdict" id="verdict"></article>
+
+        <article class="card" id="moves-block">
+          <div class="card-head">
+            <h2>Suggested moves</h2>
+            <span class="tag">Review first</span>
+          </div>
+          <div id="sim-banner" class="sim-banner" hidden></div>
+          <div id="suggested-moves"></div>
+          <div id="moves-gate" hidden></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><h2>Next steps</h2></div>
+          <div id="actions"></div>
+        </article>
       </div>
 
       <!-- ZONE 4: Tabbed secondary content -->
@@ -721,18 +790,29 @@
       chip.textContent = sig.text;
 
       list.innerHTML = forecasts.map((f, i) => {
-        const pctCls = f.direction === "up" ? "up" : f.direction === "down" ? "down" : "flat";
+        const dir = f.direction || "flat";
+        const pctCls = dir === "up" ? "up" : dir === "down" ? "down" : "flat";
+        const arrow = dir === "up" ? "↑" : dir === "down" ? "↓" : "→";
+        const pctSign = f.return_pct >= 0 ? "+" : "";
+        const curPrice = f.last_close ? "$" + Number(f.last_close).toFixed(2) : "—";
+        const predPrice = f.predicted_close ? "$" + Number(f.predicted_close).toFixed(2) : "";
         return (
-          '<div class="forecast-item">' +
-          '<div class="forecast-top"><span class="sym">' + esc(f.symbol) + '</span>' +
-          '<span class="pct ' + pctCls + '">' + esc(f.return_pct) + '% / ' + esc(f.horizon_days) + 'd</span></div>' +
-          '<div class="chart-slot" id="chart-' + i + '"></div>' +
-          '<div class="forecast-caption">' + esc(plain(f.citation)) + '</div></div>'
+          '<div class="forecast-tile ' + pctCls + '-tile">' +
+          '<div class="ftile-head">' +
+          '<span class="ftile-sym">' + esc(f.symbol) + '</span>' +
+          '<span class="ftile-badge ' + pctCls + '">' + arrow + ' ' + dir.toUpperCase() + '</span>' +
+          '</div>' +
+          '<div class="ftile-price">' + esc(curPrice) + '</div>' +
+          (predPrice ? '<div class="ftile-pred">→ <span class="' + pctCls + '">' + esc(predPrice) + '</span></div>' : '') +
+          '<div class="ftile-chart" id="chart-' + i + '"></div>' +
+          '<div class="ftile-pct ' + pctCls + '">' + pctSign + Number(f.return_pct).toFixed(1) + '% / ' + esc(f.horizon_days) + 'd</div>' +
+          '</div>'
         );
       }).join("");
 
       forecasts.forEach((f, i) => {
-        mountChart(document.getElementById("chart-" + i), f.sparkline || [], f.direction, f.symbol);
+        const el = document.getElementById("chart-" + i);
+        if (el) mountChart(el, f.sparkline || [], f.direction, f.symbol);
       });
     }
 

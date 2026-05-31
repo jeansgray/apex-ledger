@@ -300,7 +300,11 @@ class CouncilOrchestrator:
         if not self.settings.apex_use_kronos:
             state.agent_outputs["quant_forecaster"] = "Kronos forecasts disabled."
             return
-        symbols = [h.get("symbol", "") for h in state.portfolio_snapshot.get("holdings", [])]
+        holding_symbols = [h.get("symbol", "") for h in state.portfolio_snapshot.get("holdings", [])]
+        watchlist = self.ledger.list_watchlist()
+        from ..data.universe import CURATED_UNIVERSE
+        extra = [s for s in CURATED_UNIVERSE if s not in holding_symbols and s not in watchlist][:7]
+        symbols = list(dict.fromkeys(holding_symbols + watchlist + extra))
         try:
             forecasts = self.kronos.forecast_symbols(
                 symbols,

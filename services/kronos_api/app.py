@@ -68,12 +68,15 @@ def _statistical_forecast(symbol: str, pred_len: int, lookback: int) -> SymbolFo
     if df is None or df.empty or "Close" not in df.columns:
         return None
 
-    closes = df["Close"].dropna()
+    close_col = df["Close"]
+    if hasattr(close_col, "squeeze"):
+        close_col = close_col.squeeze()
+    closes = close_col.dropna()
     if len(closes) < 30:
         return None
 
     recent = closes.tail(lookback)
-    last_close = float(recent.iloc[-1])
+    last_close = float(recent.iat[-1])
     mean_20 = float(recent.tail(20).mean())
     mean_60 = float(recent.tail(min(60, len(recent))).mean())
     momentum = (last_close / mean_20 - 1.0) * 0.35 + (last_close / mean_60 - 1.0) * 0.15
