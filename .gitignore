@@ -1,9 +1,15 @@
-# Local runtime
+# Local runtime — personal financial data (never commit)
 .env
+.env.*
+!.env.example
 data/
 !src/apex_ledger/data/
 *.db
 skills/manifest.candidates.json
+
+# Explicit: Plaid tokens, ledger, local integrations live under data/
+# data/integrations.json  — Plaid/Schwab OAuth tokens
+# data/ledger.db          — holdings, transactions, reconciliations
 
 # Python
 .venv/

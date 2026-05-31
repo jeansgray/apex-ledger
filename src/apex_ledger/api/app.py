@@ -79,6 +79,7 @@ def _integrations_status() -> dict:
     schwab = store.get_schwab()
     return {
         "plaid_configured": bool(_settings.plaid_client_id and _settings.plaid_secret),
+        "plaid_env": _settings.plaid_env,
         "plaid_connected": bool(plaid and plaid.get("access_token")),
         "plaid_institution": (plaid or {}).get("institution", ""),
         "schwab_configured": bool(_settings.schwab_app_key and _settings.schwab_app_secret),
@@ -317,7 +318,14 @@ def plaid_sync() -> dict:
         _orchestrator.ledger.replace_holdings(synced["holdings"])
     tx_count = 0
     if synced["transactions"]:
-        tx_count = _orchestrator.ledger.import_transactions_bulk(synced["transactions"])
+        tx_count = _orchestrator.ledger.replace_transactions(synced["transactions"])
+    plaid_record = _integration_store().get_plaid() or {}
+    if plaid_record.get("access_token"):
+        _integration_store().set_plaid(
+            plaid_record["access_token"],
+            plaid_record.get("item_id", ""),
+            synced.get("institution", plaid_record.get("institution", "")),
+        )
     detail = _orchestrator.ledger.ledger_detail()
     detail["synced"] = {"holdings": len(synced["holdings"]), "transactions": tx_count}
     detail["ledger_mode"] = "demo" if _orchestrator.ledger.is_demo_portfolio() else "personal"

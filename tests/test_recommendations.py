@@ -25,3 +25,17 @@ def test_florida_housing_moves():
     moves = build_suggested_moves(topic, [{"symbol": "AAPL"}], [], cash_to_deploy=5000.0)
     assert any(m.symbol == "CASH" for m in moves)
     assert any(m.action == "hold" and m.symbol == "AAPL" for m in moves)
+
+
+def test_portfolio_aware_nvda_moves():
+    topic = analyze_question("What should I do with my portfolio if rates stay higher?")
+    moves = build_suggested_moves(
+        topic,
+        [{"symbol": "NVDA", "quantity": 453}, {"symbol": "CASH", "quantity": 4000}],
+        ["Investors cautious on mega-cap concentration."],
+        cash_to_deploy=1000.0,
+    )
+    symbols = {m.symbol for m in moves}
+    assert "NVDA" in symbols
+    assert "VTI" not in symbols or all(m.symbol != "VTI" for m in moves if m.symbol == "NVDA")
+    assert any(m.action == "buy" and m.symbol == "NVDA" for m in moves)

@@ -223,15 +223,7 @@ class SimulationFactory:
             if not data.get("already_prepared") and data.get("task_id"):
                 self._wait_prepare(client, simulation_id, data["task_id"])
 
-            resp = client.post(
-                "/api/simulation/start",
-                json={
-                    "simulation_id": simulation_id,
-                    "platform": "twitter",
-                    "max_rounds": DEFAULT_MAX_ROUNDS,
-                },
-            )
-            resp.raise_for_status()
+            self._start_simulation(client, simulation_id)
             self._wait_simulation_complete(client, simulation_id)
 
             resp = client.post("/api/report/generate", json={"simulation_id": simulation_id})
@@ -248,6 +240,20 @@ class SimulationFactory:
             cache_key=cache_key,
             project_id=project_id,
         )
+
+    def _start_simulation(self, client: httpx.Client, simulation_id: str) -> None:
+        payload = {
+            "simulation_id": simulation_id,
+            "platform": "twitter",
+            "max_rounds": DEFAULT_MAX_ROUNDS,
+        }
+        resp = client.post("/api/simulation/start", json=payload)
+        if resp.status_code == 400:
+            err = (resp.json().get("error") or "").lower()
+            if "running" in err or "运行" in resp.json().get("error", ""):
+                return
+            resp = client.post("/api/simulation/start", json={**payload, "force": True})
+        resp.raise_for_status()
 
     def _wait_graph_task(self, client: httpx.Client, task_id: str) -> None:
         started = time.time()

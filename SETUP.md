@@ -200,9 +200,33 @@ python3 scripts/import_personal_ledger.py my_holdings.csv
 
 **Plaid (banks + some investment accounts):**
 
-1. Create a app at [Plaid Dashboard](https://dashboard.plaid.com/)
-2. Add to `.env`: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=sandbox`
-3. Restart Apex → **Connect bank** in the UI → **Sync now**
+1. Create an app at [Plaid Dashboard](https://dashboard.plaid.com/)
+2. For **real banks** on a budget: use the **Trial plan** (free for up to 10 connected accounts — enough for two users). Plaid retired the old “Development” environment; use `production`, not `development`.
+3. Add keys to `.env`:
+
+```bash
+# Sandbox ($0, fake banks, test phone 415-555-0010):
+uv run python scripts/configure_plaid.py <client_id> <sandbox_secret> sandbox
+
+# Production Trial (real banks, your real phone):
+uv run python scripts/configure_plaid.py <client_id> <production_secret> production
+```
+
+4. Restart Apex → **Connect bank** in the UI → **Sync now**
+
+**Plaid CLI (optional, terminal + agents):**
+
+```bash
+# Requires Homebrew (install from https://brew.sh if needed)
+brew install plaid/plaid-cli/plaid
+plaid login
+plaid keys fetch          # after Trial plan approved
+plaid config set --env production
+plaid link                # link a bank from the terminal
+plaid balance             # test
+```
+
+Or run the helper: `bash scripts/setup_plaid_production.sh`
 
 **Charles Schwab (brokerage OAuth):**
 
@@ -219,8 +243,7 @@ Restart Apex (or `docker compose restart apex`) and run **Analyze** again. The U
 
 ## 10. What's not wired yet
 
-- Broker/bank OAuth (Plaid, Robinhood API, etc.)
-- Production deployment / multi-user auth
+- Production deployment / multi-user auth on the Apex dashboard (Plaid OAuth is local single-user today)
 
 ## 11. CI & GitHub mirror
 

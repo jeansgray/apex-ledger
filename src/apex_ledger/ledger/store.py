@@ -111,6 +111,23 @@ class LedgerStore:
             )
             return len(rows)
 
+    def replace_transactions(
+        self,
+        rows: list[tuple[str, str, float, str]],
+    ) -> int:
+        """Replace all transactions. Rows: posted_on, description, amount, account."""
+        with self.connection() as conn:
+            conn.execute("DELETE FROM transactions")
+            conn.executemany(
+                """
+                INSERT INTO transactions
+                (posted_on, description, amount, account, category, status, memo)
+                VALUES (?, ?, ?, ?, NULL, 'unmatched', 'plaid')
+                """,
+                rows,
+            )
+            return len(rows)
+
     def import_transactions_bulk(
         self,
         rows: list[tuple[str, str, float, str]],

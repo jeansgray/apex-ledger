@@ -7,9 +7,30 @@
   <meta name="description" content="Personal investor platform: MiroFish scenario council + ledger reconciliation.">
   <link rel="icon" href="assets/apex-logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
+  <script src="assets/cosmos.js" defer></script>
+  <script src="assets/portal.js" defer></script>
 </head>
-<body>
-  <div class="wrap">
+<body class="cosmos-body gate-locked">
+  <div id="cosmos-wrap" class="cosmos-wrap">
+    <canvas id="cosmos-canvas" aria-hidden="true"></canvas>
+  </div>
+  <div class="holo-grid" aria-hidden="true"></div>
+  <div class="holo-scanline" aria-hidden="true"></div>
+  <div class="holo-orb a" aria-hidden="true"></div>
+  <div class="holo-orb b" aria-hidden="true"></div>
+
+  <div id="cosmos-gate" class="cosmos-gate" role="dialog" aria-labelledby="gate-title" aria-modal="true">
+    <div class="gate-aurora" aria-hidden="true"></div>
+    <div class="gate-core">
+      <span class="gate-kicker">Collaborator channel</span>
+      <h2 id="gate-title" class="gate-title">Nebula Gate</h2>
+      <p class="gate-copy">Documentation modules are sealed behind the particle veil. Part it — the nebula forms the apex predator spine.</p>
+      <button type="button" class="gate-breach-btn" id="gate-breach">Part the veil</button>
+    </div>
+  </div>
+
+  <div class="wrap" id="main-shell">
     <header>
       <div class="brand-row">
         <img src="assets/apex-logo.svg" alt="" class="brand-logo" width="56" height="56" />
@@ -19,21 +40,20 @@
           <p class="tagline">Scenario council + quant forecasts + ledger reconciliation — human approval at every gate.</p>
         </div>
       </div>
-      <nav class="toc" aria-label="On this page">
-        <a href="#architecture">Architecture</a>
-        <a href="#same-ui">Same dashboard?</a>
-        <a href="#personal">Your portfolio</a>
-        <a href="#repos">Repositories</a>
-        <a href="#prerequisites">Prerequisites</a>
-        <a href="#clone">Clone &amp; setup</a>
-        <a href="#keys">Demo vs live keys</a>
-        <a href="#run">Run locally</a>
-        <a href="#docker">Docker</a>
-        <a href="#boundary">AGPL boundary</a>
+      <nav class="holo-deck" id="holo-deck" aria-label="Documentation modules">
+        <button type="button" class="holo-tile" data-panel="architecture"><span class="tile-glyph">◈</span><span class="tile-label">Architecture</span></button>
+        <button type="button" class="holo-tile" data-panel="parity"><span class="tile-glyph">◎</span><span class="tile-label">Dashboard parity</span></button>
+        <button type="button" class="holo-tile" data-panel="personal"><span class="tile-glyph">◇</span><span class="tile-label">Your portfolio</span></button>
+        <button type="button" class="holo-tile" data-panel="repos"><span class="tile-glyph">⬡</span><span class="tile-label">Repositories</span></button>
+        <button type="button" class="holo-tile" data-panel="setup"><span class="tile-glyph">▣</span><span class="tile-label">Setup</span></button>
+        <button type="button" class="holo-tile" data-panel="run"><span class="tile-glyph">⎈</span><span class="tile-label">Run &amp; deploy</span></button>
       </nav>
     </header>
 
-    <section id="architecture">
+    <div class="holo-stage">
+
+    <section class="holo-panel" id="holo-panel-architecture" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
       <h2>Three-service architecture</h2>
       <p>Apex Ledger is <strong>not</strong> a single web app. The council UI on <code>:8080</code> calls two HTTP backends:</p>
       <div class="card">
@@ -63,6 +83,8 @@
       <p>Council merges <em>both</em> signals into suggested moves. Missing Kronos → forecasts fall back to fixtures; missing MiroFish → demo simulation fixture only.</p>
     </section>
 
+    <section class="holo-panel" id="holo-panel-parity" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <section id="same-ui">
       <h2>Will I see the same dashboard?</h2>
       <div class="card">
@@ -92,6 +114,16 @@
       </div>
     </section>
 
+    <section id="ui-note">
+      <div class="card warn">
+        <strong>Council UI runs on your machine, not on GitHub Pages.</strong>
+        <p>This site is onboarding documentation only. The council UI (<code>http://127.0.0.1:8080</code>) plus backends <strong>Kronos</strong> (<code>:5002</code>) and <strong>MiroFish</strong> (<code>:5001</code>) must run locally, in a dev container, or via Docker Compose.</p>
+      </div>
+    </section>
+    </section>
+
+    <section class="holo-panel" id="holo-panel-personal" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <section id="personal">
       <h2>Your portfolio (not demo data)</h2>
       <div class="card warn">
@@ -109,7 +141,10 @@
       </div>
       <p>Check mode: <code>curl -s http://127.0.0.1:8080/config | python3 -m json.tool</code></p>
     </section>
+    </section>
 
+    <section class="holo-panel" id="holo-panel-repos" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <section id="repos">
       <h2>Repositories</h2>
       <p>Apex Ledger is developed on GitLab; GitHub mirrors CI and this static site.</p>
@@ -119,14 +154,10 @@
         <a class="pill" href="https://github.com/666ghj/MiroFish">MiroFish (AGPL submodule)</a>
       </div>
     </section>
-
-    <section id="ui-note">
-      <div class="card warn">
-        <strong>Council UI runs on your machine, not on GitHub Pages.</strong>
-        <p>This site is onboarding documentation only. The council UI (<code>http://127.0.0.1:8080</code>) plus backends <strong>Kronos</strong> (<code>:5002</code>) and <strong>MiroFish</strong> (<code>:5001</code>) must run locally, in a dev container, or via Docker Compose.</p>
-      </div>
     </section>
 
+    <section class="holo-panel" id="holo-panel-setup" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <section id="prerequisites">
       <h2>Prerequisites</h2>
       <div class="card">
@@ -215,7 +246,10 @@ python3 scripts/setup_mirofish.py --no-start</code></pre>
       </div>
       <p>After adding keys, run <code>python3 scripts/configure_keys.py</code> and restart both services.</p>
     </section>
+    </section>
 
+    <section class="holo-panel" id="holo-panel-run" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <section id="run">
       <h2>Run locally (three terminals)</h2>
       <p>All three services are required for the full dashboard (forecasts rail, council debate, suggested moves).</p>
@@ -242,6 +276,9 @@ UV_PYTHON=$(uv python find 3.12) uv run --directory vendor/mirofish/backend pyth
       <p><code>vendor/mirofish</code> is AGPL-3.0. Do <strong>not</strong> import MiroFish Python code into <code>src/apex_ledger/</code>. Call it over HTTP via <code>MIROFISH_BASE_URL</code>.</p>
       <p>Kronos runs as a separate MIT-licensed service at <code>KRONOS_BASE_URL</code> (default <code>http://127.0.0.1:5002</code>). Same HTTP-only rule — no imports from <code>services/kronos_api</code> into council code beyond the existing client.</p>
     </section>
+    </section>
+
+    </div>
 
     <footer>
       <p>Apex Ledger — proprietary app + AGPL MiroFish service boundary. Documentation site only; interactive UI is local.</p>

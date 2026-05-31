@@ -5,240 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Apex Ledger</title>
   <link rel="icon" href="/static/apex-logo.svg" type="image/svg+xml" />
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #05080f;
-      --surface: #0e1420;
-      --surface-2: #141c2c;
-      --line: #1f2a3d;
-      --text: #f1f5f9;
-      --muted: #8b9cb3;
-      --accent: #38bdf8;
-      --accent-2: #0ea5e9;
-      --ok: #34d399;
-      --warn: #fbbf24;
-      --danger: #f87171;
-      --radius: 14px;
-      --max: 1120px;
-      font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      background-image: radial-gradient(ellipse 70% 45% at 50% -15%, rgba(14, 165, 233, 0.12), transparent);
-    }
-    .shell { max-width: var(--max); margin: 0 auto; padding: 0 1rem 4rem; }
-
-    /* ── Wireframe zone 1: App bar ── */
-    .appbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 1.25rem;
-    }
-    .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
-    .brand-mark {
-      width: 48px; height: 48px; flex-shrink: 0;
-      border-radius: 12px;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 28px rgba(14,165,233,0.2);
-    }
-    .brand h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.08em; text-transform: uppercase; }
-    .brand p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--muted); }
-    .status-pill {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-      padding: 0.35rem 0.65rem; border-radius: 999px; border: 1px solid var(--line);
-      background: var(--surface); color: var(--muted); white-space: nowrap;
-    }
-    .status-pill.live { border-color: rgba(52,211,153,0.4); color: var(--ok); background: rgba(52,211,153,0.08); }
-    .status-pill.demo { border-color: rgba(251,191,36,0.4); color: var(--warn); background: rgba(251,191,36,0.08); }
-
-    /* ── Wireframe zone 2: Ask ── */
-    .ask-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.1rem;
-      margin-bottom: 1.25rem;
-    }
-    .ask-card label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    textarea, input {
-      width: 100%; border: 1px solid var(--line); border-radius: 10px;
-      padding: 0.7rem 0.85rem; font: inherit; background: var(--bg); color: var(--text);
-    }
-    textarea:focus, input:focus { outline: 2px solid rgba(56,189,248,0.35); border-color: var(--accent); }
-    .ask-row { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
-    @media (min-width: 640px) { .ask-row { grid-template-columns: 1fr auto auto; align-items: end; } }
-    .ask-row .field-cash { max-width: 140px; }
-    button {
-      border: 0; border-radius: 10px; padding: 0.75rem 1.1rem;
-      font: inherit; font-weight: 600; cursor: pointer;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent-2), #2563eb);
-      color: #fff; box-shadow: 0 6px 24px rgba(14,165,233,0.25);
-    }
-    .btn-primary:disabled { opacity: 0.55; cursor: wait; }
-    .btn-ok { background: var(--ok); color: #052e1a; }
-    .btn-ghost { background: var(--surface-2); border: 1px solid var(--line); color: var(--text); }
-    .run-status { font-size: 0.85rem; color: var(--muted); margin-top: 0.65rem; min-height: 1.2rem; }
-
-    /* ── Wireframe zone 3: Results grid ── */
-    .results-grid {
-      display: grid;
-      gap: 1.25rem;
-    }
-    @media (min-width: 960px) {
-      .results-grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 1.1rem;
-      margin-bottom: 1rem;
-    }
-    .card-head {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-      margin-bottom: 0.85rem;
-    }
-    .card-head h2 { margin: 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
-    .card-head .tag { font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.45rem; border-radius: 999px; background: rgba(248,113,113,0.15); color: var(--danger); }
-
-    /* Verdict */
-    .verdict h3 { margin: 0 0 0.35rem; font-size: 1.35rem; line-height: 1.25; }
-    .verdict .lead { color: var(--muted); margin: 0 0 0.85rem; font-size: 0.95rem; }
-    .direct { padding: 0.85rem; border-radius: 10px; background: rgba(14,165,233,0.08); border: 1px solid rgba(56,189,248,0.2); margin-bottom: 0.75rem; font-size: 0.95rem; }
-    .direct strong { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 0.3rem; }
-    .bottom { padding: 0.75rem; border-radius: 10px; background: var(--surface-2); font-size: 0.9rem; border-left: 3px solid var(--accent); }
-
-    /* Forecast rail — always visible */
-    .forecast-rail { position: sticky; top: 1rem; }
-    .forecast-rail .card { margin-bottom: 0.75rem; }
-    .signal-chip {
-      font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
-      padding: 0.25rem 0.5rem; border-radius: 999px;
-    }
-    .signal-aligned { background: rgba(52,211,153,0.12); color: var(--ok); }
-    .signal-mixed { background: rgba(251,191,36,0.12); color: var(--warn); }
-    .signal-narrative { background: rgba(99,102,241,0.12); color: #a5b4fc; }
-    .forecast-item {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .forecast-item:last-child { border-bottom: 0; padding-bottom: 0; }
-    .forecast-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; }
-    .forecast-top .sym { font-weight: 800; font-size: 1rem; }
-    .forecast-top .pct { font-size: 0.85rem; font-weight: 700; }
-    .pct.up { color: var(--ok); }
-    .pct.down { color: var(--danger); }
-    .pct.flat { color: var(--muted); }
-    .chart-box {
-      position: relative;
-      height: 72px;
-      border-radius: 8px;
-      background: rgba(0,0,0,0.35);
-      overflow: hidden;
-    }
-    .chart-box canvas { display: block; width: 100%; height: 100%; }
-    .chart-tip {
-      position: absolute; pointer-events: none; top: 6px;
-      background: rgba(5,8,15,0.92); border: 1px solid var(--line);
-      border-radius: 6px; padding: 0.15rem 0.4rem; font-size: 0.65rem;
-      opacity: 0; transition: opacity 0.12s;
-    }
-    .chart-box:hover .chart-tip.show { opacity: 1; }
-    .forecast-caption { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; }
-
-    /* Moves */
-    .move {
-      border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem;
-      background: var(--surface-2); margin-bottom: 0.65rem;
-    }
-    .move:last-child { margin-bottom: 0; }
-    .move-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: start; }
-    .move-kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; color: var(--accent); text-transform: uppercase; }
-    .move h4 { margin: 0.15rem 0 0; font-size: 1rem; }
-    .move p { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--muted); }
-    .move-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; font-size: 0.75rem; }
-    .move-meta span { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 0.1rem 0.45rem; }
-    .sim-banner {
-      font-size: 0.8rem; color: var(--muted); padding: 0.55rem 0.7rem;
-      border-radius: 8px; border: 1px dashed var(--line); margin-bottom: 0.75rem;
-    }
-    .sim-banner.running { border-color: rgba(56,189,248,0.4); animation: pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 50% { background: rgba(14,165,233,0.06); } }
-
-    /* Actions — compact */
-    .action { display: flex; gap: 0.65rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line); align-items: start; }
-    .action:last-child { border-bottom: 0; }
-    .action-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 0.45rem; flex-shrink: 0; }
-    .action-dot.now { background: var(--danger); }
-    .action-dot.soon { background: var(--warn); }
-    .action-dot.consider { background: var(--accent); }
-    .action-dot.done { background: var(--ok); }
-    .action strong { display: block; font-size: 0.9rem; }
-    .action span { font-size: 0.8rem; color: var(--muted); }
-
-    /* Tabs */
-    .tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .tab {
-      background: var(--surface); border: 1px solid var(--line); color: var(--muted);
-      padding: 0.45rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
-    }
-    .tab.active { background: rgba(14,165,233,0.12); border-color: rgba(56,189,248,0.45); color: var(--text); }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .scenario-grid { display: grid; gap: 0.65rem; }
-    @media (min-width: 700px) { .scenario-grid { grid-template-columns: repeat(3, 1fr); } }
-    .scenario { border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem; background: var(--surface-2); }
-    .scenario .lbl { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted); }
-    .scenario h4 { margin: 0.25rem 0; font-size: 0.95rem; }
-    .scenario p { margin: 0; font-size: 0.85rem; color: var(--muted); }
-    .holding { display: flex; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
-    .holding:last-child { border-bottom: 0; }
-    .debate li { margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--muted); padding-left: 0.85rem; border-left: 2px solid var(--accent); list-style: none; }
-    .gate { margin-top: 0.75rem; padding: 0.85rem; border-radius: 10px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
-    .gate.done { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.25); }
-    .gate-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-    .empty { color: var(--muted); font-size: 0.85rem; font-style: italic; }
-    details.mini { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
-    details.mini summary { cursor: pointer; color: var(--text); }
-    .portfolio-setup { margin-bottom: 1.25rem; }
-    .portfolio-setup .hint { margin-bottom: 0.75rem; }
-    .integr-row { display: grid; gap: 0.65rem; margin-bottom: 1rem; }
-    @media (min-width: 640px) { .integr-row { grid-template-columns: 1fr 1fr; } }
-    .integr-card {
-      border: 1px dashed var(--line); border-radius: 12px; padding: 0.75rem;
-      background: var(--surface-2); font-size: 0.82rem;
-    }
-    .integr-card.soon { opacity: 0.75; }
-    .integr-card strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
-    .ledger-grid { display: grid; gap: 1rem; }
-    @media (min-width: 800px) { .ledger-grid { grid-template-columns: 1fr 1fr; } }
-    .ledger-block h3 { margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-    .ledger-list { margin: 0 0 0.75rem; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }
-    .ledger-list li {
-      display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
-      padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.85rem;
-    }
-    .ledger-list li:last-child { border-bottom: 0; }
-    .form-grid { display: grid; gap: 0.45rem; grid-template-columns: 1fr 1fr; }
-    .form-grid .full { grid-column: 1 / -1; }
-    .form-grid input, .form-grid select { padding: 0.5rem; font-size: 0.85rem; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-    .toolbar button { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
-    .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.35); }
-  </style>
+  <link rel="stylesheet" href="/static/sci-fi.css" />
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
+  <script src="/static/cosmos.js" defer></script>
+  <script src="/static/portal.js" defer></script>
 </head>
-<body>
-  <div class="shell">
+<body class="cosmos-body gate-locked">
+  <div id="cosmos-wrap" class="cosmos-wrap">
+    <canvas id="cosmos-canvas" aria-hidden="true"></canvas>
+  </div>
+  <div class="holo-grid" aria-hidden="true"></div>
+  <div class="holo-scanline" aria-hidden="true"></div>
+  <div class="holo-orb a" aria-hidden="true"></div>
+  <div class="holo-orb b" aria-hidden="true"></div>
+
+  <div id="cosmos-gate" class="cosmos-gate" role="dialog" aria-labelledby="gate-title" aria-modal="true">
+    <div class="gate-aurora" aria-hidden="true"></div>
+    <div class="gate-core">
+      <span class="gate-kicker">Sector · Apex Ledger</span>
+      <h2 id="gate-title" class="gate-title">Nebula Gate</h2>
+      <p class="gate-copy">The interface is locked behind the particle field. Part the veil — the nebula condenses into the apex spine.</p>
+      <button type="button" class="gate-breach-btn" id="gate-breach">Part the veil</button>
+    </div>
+  </div>
+
+  <div class="shell" id="main-shell">
     <!-- ZONE 1: App bar -->
     <header class="appbar">
       <div class="brand">
@@ -251,8 +42,29 @@
       <span id="status-pill" class="status-pill demo">Demo</span>
     </header>
 
-    <!-- Portfolio setup (your data) -->
-    <section class="card portfolio-setup" id="portfolio-setup">
+    <nav class="holo-deck" id="holo-deck" aria-label="Interface modules">
+      <button type="button" class="holo-tile" data-panel="portfolio">
+        <span class="tile-glyph">◈</span>
+        <span class="tile-label">Portfolio</span>
+        <span class="tile-hint">Holdings · sync · ledger</span>
+      </button>
+      <button type="button" class="holo-tile" data-panel="analyze">
+        <span class="tile-glyph">◎</span>
+        <span class="tile-label">Analyze</span>
+        <span class="tile-hint">Council question · run</span>
+      </button>
+      <button type="button" class="holo-tile" data-panel="intel" id="tile-intel">
+        <span class="tile-glyph">⬡</span>
+        <span class="tile-label">Intelligence</span>
+        <span class="tile-hint">Moves · forecasts · debate</span>
+        <span class="tile-badge" id="intel-badge" hidden>Ready</span>
+      </button>
+    </nav>
+
+    <div class="holo-stage">
+    <!-- Portfolio module -->
+    <section class="card portfolio-setup holo-panel" id="holo-panel-portfolio" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
       <div class="card-head">
         <h2>Your portfolio</h2>
         <span id="ledger-mode-tag" class="signal-chip signal-mixed">Demo</span>
@@ -323,8 +135,9 @@
       <p class="run-status" id="ledger-status"></p>
     </section>
 
-    <!-- ZONE 2: Ask -->
-    <section class="ask-card">
+    <!-- Analyze module -->
+    <section class="ask-card holo-panel" id="holo-panel-analyze" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
       <label for="question">What should we analyze?</label>
       <textarea id="question" rows="2" placeholder="e.g. If rates drop, what happens to my ETFs?">How would a Fed rate cut affect my ETF-heavy portfolio?</textarea>
       <div class="ask-row">
@@ -344,7 +157,9 @@
       <p class="run-status" id="status"></p>
     </section>
 
-    <!-- ZONE 3+: Results (hidden until run) -->
+    <!-- Intelligence module -->
+    <div class="holo-panel holo-panel-intel" id="holo-panel-intel" hidden>
+      <button type="button" class="panel-dismiss" data-close-panel aria-label="Close module">✕</button>
     <div id="results" hidden>
       <div class="results-grid">
         <!-- LEFT: Verdict → Moves → Actions -->
@@ -408,6 +223,8 @@
         <ul id="insights" style="padding-left:1rem;color:var(--muted);font-size:0.85rem;margin-top:0.75rem"></ul>
         <div id="watch-outs" style="margin-top:1rem"></div>
       </div>
+    </div>
+    </div>
     </div>
   </div>
 
@@ -734,6 +551,9 @@
       currentState = state;
       const brief = buildBrief(state);
       document.getElementById("results").hidden = false;
+      document.getElementById("intel-badge")?.removeAttribute("hidden");
+      document.getElementById("tile-intel")?.classList.add("has-signal");
+      window.ApexPortal?.openPanel("intel");
       renderVerdict(brief);
       renderForecasts(brief, state);
       renderMoves(brief, state);
@@ -772,8 +592,7 @@
         });
         currentRunId = state.run_id;
         renderResults(state);
-        status.textContent = "Done — forecasts animate on the right.";
-        document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+        status.textContent = "Done — open Intelligence module for forecasts and moves.";
       } catch (err) {
         status.textContent = "Error: " + err.message;
       } finally {
@@ -855,7 +674,7 @@
       disconnectBtn.hidden = true;
 
       if (!integrations.plaid_configured) {
-        statusEl.textContent = "Add PLAID_CLIENT_ID and PLAID_SECRET to .env, restart Apex.";
+        statusEl.textContent = "Add Plaid keys to .env, run: python3 scripts/configure_plaid.py — then restart Apex.";
         return;
       }
       if (integrations.plaid_connected) {
@@ -863,7 +682,12 @@
         syncBtn.hidden = false;
         disconnectBtn.hidden = false;
       } else {
-        statusEl.textContent = "Plaid ready — connect checking or investment accounts.";
+        const envHint = integrations.plaid_env === "sandbox"
+          ? " Sandbox ($0): phone 415-555-0010 · OTP 123456 · user_good / pass_good."
+          : integrations.plaid_env === "production"
+            ? " Production Trial: real bank + your phone — free for up to 10 connections."
+            : "";
+        statusEl.textContent = "Plaid ready — connect checking or investment accounts." + envHint;
         connectBtn.hidden = false;
       }
     }
@@ -907,7 +731,14 @@
             loadLedger();
           },
           onExit: (err) => {
-            if (err) status.textContent = "Plaid cancelled or failed.";
+            if (!err) return;
+            let msg = err.display_message || err.error_message || "Plaid cancelled or failed.";
+            if (err.error_code === "INVALID_PHONE_NUMBER") {
+              msg = "Sandbox rejects real phone numbers. Use 415-555-0010, then OTP 123456.";
+            } else if (err.error_code === "INVALID_OTP") {
+              msg = "Sandbox OTP is always 123456.";
+            }
+            status.textContent = msg;
           },
         });
         handler.open();
