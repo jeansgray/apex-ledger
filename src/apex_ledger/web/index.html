@@ -695,6 +695,9 @@
             <div class="drop-zone-label">Drop your CSV here or <strong>click to browse</strong></div>
             <div class="drop-zone-file" id="csv-drop-name"></div>
           </div>
+          <div id="csv-submit-row" style="display:none;margin-top:0.65rem">
+            <button class="btn-primary" type="button" id="csv-submit-btn" style="width:100%;font-size:0.85rem;padding:0.65rem">Import Holdings</button>
+          </div>
         </div>
 
         <!-- 2. Broker integrations — 2-col row -->
@@ -1602,7 +1605,48 @@
       });
     }
 
-    wireDropZone("csv-drop", "csv-upload", "csv-drop-name", "/ledger/import-csv", "Imported generic holdings CSV.");
+    // Generic CSV — stage file, submit button triggers upload
+    (function() {
+      const zone = document.getElementById("csv-drop");
+      const input = document.getElementById("csv-upload");
+      const nameEl = document.getElementById("csv-drop-name");
+      const submitRow = document.getElementById("csv-submit-row");
+      const submitBtn = document.getElementById("csv-submit-btn");
+      let pendingFile = null;
+
+      function stageFile(file) {
+        if (!file) return;
+        pendingFile = file;
+        nameEl.textContent = file.name;
+        nameEl.style.display = "block";
+        submitRow.style.display = "block";
+        submitBtn.textContent = "Import " + file.name;
+        submitBtn.disabled = false;
+      }
+
+      zone.addEventListener("click", () => input.click());
+      input.addEventListener("change", (e) => stageFile(e.target.files?.[0]));
+      zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        stageFile(e.dataTransfer.files?.[0]);
+      });
+
+      submitBtn.addEventListener("click", async () => {
+        if (!pendingFile) return;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Importing…";
+        await uploadLedgerCsv("/ledger/import-csv", pendingFile, "Imported generic holdings CSV.");
+        pendingFile = null;
+        input.value = "";
+        nameEl.textContent = "";
+        nameEl.style.display = "none";
+        submitRow.style.display = "none";
+        submitBtn.textContent = "Import Holdings";
+      });
+    })();
 
     wireDropZone("schwab-drop", "schwab-upload", "schwab-drop-name", "/ledger/import-schwab", "Imported Schwab export.");
 
