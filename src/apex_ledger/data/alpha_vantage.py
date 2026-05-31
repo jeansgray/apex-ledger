@@ -40,7 +40,7 @@ class AlphaVantageClient:
         data = self._read_cache(cache_key)
         if data is None:
             try:
-                with httpx.Client(timeout=15.0) as client:
+                with httpx.Client(timeout=5.0) as client:
                     response = client.get(BASE_URL, params={
                         "function": "NEWS_SENTIMENT",
                         "tickers": tickers,
@@ -152,7 +152,7 @@ class AlphaVantageClient:
             query.update(params)
 
         try:
-            with httpx.Client(timeout=15.0) as client:
+            with httpx.Client(timeout=5.0) as client:
                 response = client.get(BASE_URL, params=query)
                 response.raise_for_status()
                 data = response.json()

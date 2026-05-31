@@ -87,7 +87,7 @@ class ComplianceSearchClient:
             return cached
 
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=5.0) as client:
                 response = client.get(
                     BRAVE_URL,
                     params={"q": query, "count": 3, "safesearch": "moderate"},
