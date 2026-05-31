@@ -84,7 +84,7 @@ class FinnhubClient:
             return cached
 
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=5.0) as client:
                 response = client.get(
                     f"{BASE_URL}/{endpoint}",
                     params={"symbol": symbol.upper(), "token": self.api_key},

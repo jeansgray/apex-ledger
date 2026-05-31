@@ -62,7 +62,7 @@ class YouSearchClient:
             return cached
 
         try:
-            with httpx.Client(timeout=12.0) as client:
+            with httpx.Client(timeout=5.0) as client:
                 response = client.get(
                     YOU_SEARCH_URL,
                     params={"query": query, "num_web_results": MAX_NEWS_PER_SYMBOL},
