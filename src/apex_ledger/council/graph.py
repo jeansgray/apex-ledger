@@ -8,6 +8,12 @@ import httpx
 
 from ..config import Settings
 from ..data.alpha_vantage import AlphaVantageClient
+from ..data.stocktwits import StockTwitsClient
+from ..data.fred import FredClient
+from ..data.finnhub import FinnhubClient
+from ..data.glossary import extract_terms
+from ..data.web_search import ComplianceSearchClient
+from ..data.you_search import YouSearchClient
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -61,6 +67,25 @@ class CouncilOrchestrator:
             settings.alpha_vantage_api_key,
             cache_dir=settings.apex_data_dir / "av_cache",
         )
+        self.stocktwits = StockTwitsClient(
+            cache_dir=settings.apex_data_dir / "stocktwits_cache",
+        )
+        self.fred = FredClient(
+            api_key=settings.fred_api_key,
+            cache_dir=settings.apex_data_dir / "fred_cache",
+        )
+        self.finnhub = FinnhubClient(
+            settings.finnhub_api_key,
+            cache_dir=settings.apex_data_dir / "finnhub_cache",
+        )
+        self.compliance_search = ComplianceSearchClient(
+            settings.search_api_key,
+            cache_dir=settings.apex_data_dir / "search_cache",
+        )
+        self.you_search = YouSearchClient(
+            settings.you_api_key,
+            cache_dir=settings.apex_data_dir / "you_cache",
+        )
         self._runs: dict[str, CouncilRunState] = {}
 
     def run(
@@ -93,6 +118,7 @@ class CouncilOrchestrator:
             self._run_compliance_skeptic(state, topic)
             self._run_scenario_synthesizer(state, topic)
             self._run_recommendation_engine(state, topic)
+            state.glossary = extract_terms(state.research_notes + state.risk_flags + state.simulation_insights)
             state.friendly_brief = build_friendly_brief(state, topic).model_dump()
             state.status = "awaiting_human" if state.simulation_factory.get("status") != "running" else "simulation_running"
         except Exception as exc:  # noqa: BLE001
@@ -325,11 +351,9 @@ class CouncilOrchestrator:
         symbols = list(dict.fromkeys(h["symbol"] for h in holdings[:5]))
         state.research_notes.append(f"[portfolio] Current holdings: {', '.join(symbols)}.")
 
-        # Alpha Vantage: news/sentiment across all symbols
+        # Alpha Vantage: news/sentiment + per-symbol earnings + fundamentals
         news = self.alpha_vantage.news_sentiment(symbols)
         state.research_notes.extend(news)
-
-        # Alpha Vantage: per-symbol earnings + fundamentals
         fundamental_count = 0
         for symbol in symbols:
             earnings = self.alpha_vantage.earnings_summary(symbol)
@@ -338,13 +362,43 @@ class CouncilOrchestrator:
             state.research_notes.extend(overview)
             fundamental_count += len(earnings) + len(overview)
 
+        # StockTwits: retail Bullish/Bearish sentiment per holding
+        st_bullets = self.stocktwits.sentiment_summary(symbols)
+        state.research_notes.extend(st_bullets)
+
+        # FRED: macro indicators — VIX, CPI, Fed funds rate, Treasury yield
+        macro_bullets = self.fred.macro_summary()
+        state.research_notes.extend(macro_bullets)
+
+        # Finnhub: analyst ratings + earnings surprises per holding
+        finnhub_count = 0
+        for symbol in symbols:
+            ratings = self.finnhub.analyst_ratings(symbol)
+            surprises = self.finnhub.earnings_surprise(symbol)
+            state.research_notes.extend(ratings)
+            state.research_notes.extend(surprises)
+            finnhub_count += len(ratings) + len(surprises)
+
+        # You.com: live financial news from Seeking Alpha, Fool, Finbold, etc.
+        you_bullets = self.you_search.news_for_symbols(symbols)
+        state.research_notes.extend(you_bullets)
+
         parts = []
         if news:
-            parts.append(f"{len(news)} news item(s)")
+            parts.append(f"{len(news)} AV news")
         if fundamental_count:
-            parts.append(f"{fundamental_count} fundamental data point(s)")
-        av_note = f"Alpha Vantage: {', '.join(parts)}." if parts else "Alpha Vantage: rate limit hit — cached data will be used on next run."
-        state.agent_outputs["research_curator"] = av_note
+            parts.append(f"{fundamental_count} fundamentals")
+        if st_bullets:
+            parts.append(f"{len(st_bullets)} StockTwits signals")
+        if macro_bullets:
+            parts.append(f"{len(macro_bullets)} FRED macro indicators")
+        if finnhub_count:
+            parts.append(f"{finnhub_count} Finnhub analyst data point(s)")
+        if you_bullets:
+            parts.append(f"{len(you_bullets)} You.com news")
+        state.agent_outputs["research_curator"] = (
+            f"Research: {', '.join(parts)}." if parts else "Research: no live data available."
+        )
 
     def _run_scenario_cartographer(
         self,
@@ -377,6 +431,19 @@ class CouncilOrchestrator:
         state.risk_flags.append(
             "Suggested moves are simulation-informed decision support — not guaranteed returns or regulated advice."
         )
+
+        # Web search: regulatory, legal, and tax risk per holding
+        symbols = list(dict.fromkeys(h["symbol"] for h in state.portfolio_snapshot.get("holdings", [])))
+        web_flags = self.compliance_search.compliance_flags(symbols)
+        state.risk_flags.extend(web_flags)
+        if web_flags:
+            state.agent_outputs["compliance_skeptic"] = (
+                f"Flagged {len(web_flags)} web-sourced compliance risk(s) across holdings."
+            )
+        else:
+            state.agent_outputs["compliance_skeptic"] = (
+                "Compliance check complete — no web search key configured or no results found."
+            )
 
     def _run_scenario_synthesizer(self, state: CouncilRunState, topic: TopicAnalysis) -> None:
         state.scenario_brief = {

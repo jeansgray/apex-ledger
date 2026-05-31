@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.111",
     "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.30",
+    "yfinance>=0.2",
 ]
 
 [project.optional-dependencies]
