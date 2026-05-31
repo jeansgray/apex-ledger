@@ -27,12 +27,16 @@ uv python install 3.12
 
 ### API keys (live simulations)
 
-**Demo mode** works without keys (seeded fixture `sim_apex_personal_investor`). **Live MiroFish simulations** need two keys:
+**Demo mode** works without keys (seeded fixture `sim_apex_personal_investor`). **Live MiroFish simulations** need two keys. Additional data provider keys are optional but improve council quality:
 
-| Variable | Where to get it | Used for |
-|----------|-----------------|----------|
-| `LLM_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) (`sk-...`) | MiroFish agents + ontology (OpenAI-compatible) |
-| `ZEP_API_KEY` | [Zep Cloud](https://app.getzep.com/) (free tier OK) | MiroFish knowledge graph / memory |
+| Variable | Where to get it | Required | Used for |
+|----------|-----------------|----------|----------|
+| `LLM_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) (`sk-...`) | Yes (live sim) | MiroFish agents + ontology |
+| `ZEP_API_KEY` | [Zep Cloud](https://app.getzep.com/) (free tier OK) | Yes (live sim) | MiroFish knowledge graph / memory |
+| `ALPHA_VANTAGE_API_KEY` | [Alpha Vantage](https://www.alphavantage.co/support/#api-key) (free) | No | News sentiment, earnings, fundamentals per holding |
+| `FINNHUB_API_KEY` | [Finnhub](https://finnhub.io/register) (free tier) | No | Analyst ratings, earnings surprises per holding |
+| `FRED_API_KEY` | [FRED](https://fred.stlouisfed.org/docs/api/api_key.html) (free) | No | CPI, Fed funds rate, unemployment (VIX/Treasury free without key) |
+| `SEARCH_API_KEY` | [Brave Search](https://api.search.brave.com/) (free tier) | No | Compliance web search — regulatory/legal risk per holding *(roadmap)* |
 
 **Never commit keys.** Copy `.env.example` → `.env`, paste keys there, then sync:
 
@@ -181,7 +185,47 @@ See [SETUP.md §9 Personal portfolio](SETUP.md#9-personal-portfolio-replace-demo
 | Scenario Synthesizer | Base / upside / downside brief |
 | Recommendation engine | Suggested moves → **human gate** |
 
-## SkillMD curation
+## Roadmap
+
+### Feature: Financial Terms Glossary
+**Status:** Scoped, not yet built.
+
+Every council run surfaces financial jargon — P/E ratio, EPS surprise, VIX, yield curve, basis points, etc. Non-expert investors shouldn't have to Google terms mid-decision.
+
+**Planned implementation:**
+- Add a `terms` field to the `CouncilRunState` output — a dict of `{term: plain_english_definition}` populated during each council run
+- Research Curator scans research notes for known jargon and appends definitions automatically
+- UI renders a collapsible glossary panel beneath the council brief
+- Definitions are static (curated, no API cost) but tied to the specific terms used in that run — not a generic dictionary dump
+
+**Why it matters:** Stock recommendations are only useful if the person reading them understands what's being said. This closes the literacy gap without requiring the user to leave the app.
+
+---
+
+### Feature: Compliance Web Search (Open Web Legal & Financial Scan)
+**Status:** Scoped, not yet built.
+
+The Compliance Skeptic currently flags hardcoded risks (concentration, Florida insurance, etc.). It has no awareness of:
+- Recent regulatory actions against holdings (SEC enforcement, FTC investigations)
+- Tax implications of suggested moves (wash sale rules, capital gains treatment)
+- Sector-specific legal risks (AAPL App Store antitrust, etc.)
+- Financial terms or concepts the council may not be accounting for
+
+**Planned implementation:**
+- Integrate a search API (Brave Search free tier or SerpAPI) as `src/apex_ledger/data/web_search.py`
+- Add `SEARCH_API_KEY` to Settings
+- Compliance Skeptic runs targeted searches per holding:
+  - `"{symbol} SEC enforcement 2025"`
+  - `"{symbol} regulatory risk {current_year}"`
+  - `"tax implications selling {symbol} short term"`
+- Results injected into `state.risk_flags` before the Recommendation Engine runs
+- Caps at 3 searches per council run to stay within free tier limits
+
+**Why it matters:** Keeps the council honest. A quant signal can look great on a stock that has a pending DOJ investigation — web search catches what structured data sources miss.
+
+---
+
+
 
 ```bash
 uv sync --extra curate
