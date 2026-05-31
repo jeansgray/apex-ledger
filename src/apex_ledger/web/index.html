@@ -294,6 +294,24 @@
     }
     .integr-card.soon { opacity: 0.75; }
     .integr-card strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+    .drop-zone {
+      border: 2px dashed var(--line); border-radius: 10px;
+      padding: 1.1rem 0.75rem; text-align: center; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: rgba(255,255,255,0.02); margin-top: 0.5rem;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent); background: rgba(99,102,241,0.07);
+    }
+    .drop-zone.drag-over { border-style: solid; }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-zone-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+    .drop-zone-label { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .drop-zone-label strong { color: var(--accent); }
+    .drop-zone-file { font-size: 0.72rem; margin-top: 0.35rem; color: var(--ok); font-weight: 700; display: none; }
     .ledger-grid { display: grid; gap: 1rem; }
     @media (min-width: 800px) { .ledger-grid { grid-template-columns: 1fr 1fr; } }
     .ledger-block h3 { margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
@@ -452,14 +470,23 @@
           </div>
           <details class="mini" style="margin-top:0.5rem">
             <summary>CSV backup import</summary>
-            <label class="hint" for="schwab-upload">Schwab Positions/Transactions export</label>
-            <input id="schwab-upload" type="file" accept=".csv,text/csv" />
+            <div class="drop-zone" id="schwab-drop" style="margin-top:0.4rem">
+              <input id="schwab-upload" type="file" accept=".csv,text/csv" />
+              <div class="drop-zone-icon">📊</div>
+              <div class="drop-zone-label">Drop Schwab export or <strong>click to browse</strong></div>
+              <div class="drop-zone-file" id="schwab-drop-name"></div>
+            </div>
           </details>
         </div>
         <div class="integr-card">
           <strong>Generic CSV</strong>
-          <label class="hint" for="csv-upload">Holdings CSV (<code>symbol, quantity, cost_basis, account</code>)</label>
-          <input id="csv-upload" type="file" accept=".csv,text/csv" />
+          <p class="hint" style="margin:0 0 0.1rem">Holdings CSV (<code>symbol, quantity, cost_basis, account</code>)</p>
+          <div class="drop-zone" id="csv-drop">
+            <input id="csv-upload" type="file" accept=".csv,text/csv" />
+            <div class="drop-zone-icon">📂</div>
+            <div class="drop-zone-label">Drop your CSV here or <strong>click to browse</strong></div>
+            <div class="drop-zone-file" id="csv-drop-name"></div>
+          </div>
         </div>
       </div>
       <div class="ledger-grid">
@@ -1291,19 +1318,33 @@
       }
     });
 
-    document.getElementById("csv-upload").addEventListener("change", async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      await uploadLedgerCsv("/ledger/import-csv", file, "Imported generic holdings CSV.");
-      e.target.value = "";
-    });
+    function wireDropZone(zoneId, inputId, nameId, uploadPath, okMsg) {
+      const zone = document.getElementById(zoneId);
+      const input = document.getElementById(inputId);
+      const nameEl = document.getElementById(nameId);
+      if (!zone || !input) return;
 
-    document.getElementById("schwab-upload").addEventListener("change", async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      await uploadLedgerCsv("/ledger/import-schwab", file, "Imported Schwab export.");
-      e.target.value = "";
-    });
+      async function handleFile(file) {
+        if (!file) return;
+        nameEl.textContent = file.name;
+        nameEl.style.display = "block";
+        await uploadLedgerCsv(uploadPath, file, okMsg);
+        input.value = "";
+      }
+
+      input.addEventListener("change", (e) => handleFile(e.target.files?.[0]));
+
+      zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        handleFile(e.dataTransfer.files?.[0]);
+      });
+    }
+
+    wireDropZone("csv-drop", "csv-upload", "csv-drop-name", "/ledger/import-csv", "Imported generic holdings CSV.");
+    wireDropZone("schwab-drop", "schwab-upload", "schwab-drop-name", "/ledger/import-schwab", "Imported Schwab export.");
 
     async function uploadLedgerCsv(path, file, okMsg) {
       const status = document.getElementById("ledger-status");
