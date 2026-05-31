@@ -41,5 +41,7 @@ class CouncilRunState(BaseModel):
     simulation_factory: dict[str, Any] = Field(default_factory=dict)
     cash_to_deploy: float = 1000.0
     glossary: dict[str, str] = Field(default_factory=dict)
+    recommended_buys: list[dict] = Field(default_factory=list)
+    trending_social: list[dict] = Field(default_factory=list)
     status: str = "running"
     error: str | None = None
