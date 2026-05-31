@@ -1,5 +1,5 @@
 /**
- * Apex Ledger — nebula gate morphs into an apex-predator spine after breach.
+ * Apex Ledger — particle field morphs into an anatomical human spine (side view).
  */
 (function () {
   const canvas = document.getElementById("cosmos-canvas");
@@ -9,15 +9,15 @@
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x060a12, 0.028);
+  scene.fog = new THREE.FogExp2(0x050810, 0.024);
 
-  const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 140);
-  camera.position.set(0, 0, 20);
+  const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 150);
+  camera.position.set(0, 0, 22);
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x060a12, 1);
+  renderer.setClearColor(0x050810, 1);
 
   function gauss() {
     return (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
@@ -27,71 +27,145 @@
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
-  const spinePalette = [
+  /** Lumbar lordosis → thoracic kyphosis → cervical lordosis (side view). */
+  function spinalOffset(t) {
+    if (t < 0.33) {
+      const u = t / 0.33;
+      return -Math.sin(u * Math.PI) * 2.6;
+    }
+    if (t < 0.68) {
+      const u = (t - 0.33) / 0.35;
+      return Math.sin(u * Math.PI) * 2.15;
+    }
+    const u = (t - 0.68) / 0.32;
+    return -Math.sin(u * Math.PI) * 1.75;
+  }
+
+  const bonePalette = [
+    new THREE.Color("#e2e8f0"),
+    new THREE.Color("#cbd5e1"),
     new THREE.Color("#7dd3fc"),
     new THREE.Color("#5eead4"),
-    new THREE.Color("#93c5fd"),
     new THREE.Color("#bae6fd"),
   ];
-  const cloudPalette = [
+  const glowPalette = [
+    new THREE.Color("#22d3ee"),
     new THREE.Color("#67e8f9"),
+    new THREE.Color("#a5f3fc"),
+  ];
+  const cloudPalette = [
+    new THREE.Color("#6366f1"),
     new THREE.Color("#818cf8"),
-    new THREE.Color("#a5b4fc"),
+    new THREE.Color("#22d3ee"),
   ];
 
-  function buildSpineTargets(count) {
+  function buildHumanSpine(count) {
     const targets = [];
-    const spineX = -11;
-    const verts = Math.max(40, Math.floor(count * 0.32));
-    const ribs = Math.max(60, Math.floor(count * 0.48));
-    const apexN = count - verts - ribs;
+    const vertebraPath = [];
+    const spineX = -10.5;
+    const segments = 32;
 
-    for (let i = 0; i < verts; i++) {
-      const t = i / Math.max(verts - 1, 1);
-      const y = (t - 0.46) * 42;
-      const curve = Math.sin(t * Math.PI * 3.2) * 1.1;
-      targets.push({ x: spineX + curve, y, z: 4 + Math.cos(t * Math.PI * 2.5) * 1.4 });
+    for (let s = 0; s <= segments; s++) {
+      const t = s / segments;
+      const y = (t - 0.5) * 40;
+      vertebraPath.push({ x: spineX + spinalOffset(t), y, z: 3.6 });
     }
 
-    for (let i = 0; i < ribs; i++) {
-      const vi = Math.floor((i / ribs) * (verts - 1));
-      const base = targets[vi];
-      const side = i % 2 === 0 ? 1 : -1;
-      const reach = 1.8 + (i % 5) * 0.55;
+    const vertN = Math.floor(count * 0.26);
+    const discN = Math.floor(count * 0.08);
+    const ribN = Math.floor(count * 0.38);
+    const pelvisN = Math.floor(count * 0.1);
+    const skullN = count - vertN - discN - ribN - pelvisN;
+
+    for (let i = 0; i < vertN; i++) {
+      const seg = i % segments;
+      const t = seg / segments;
+      const y = (t - 0.5) * 40;
+      const cx = spineX + spinalOffset(t);
+      const ring = (i % 9) / 9;
+      const r = 0.28 + (i % 3) * 0.06;
       targets.push({
-        x: base.x + side * reach,
-        y: base.y + gauss() * 0.6,
-        z: base.z + gauss() * 1.2,
+        x: cx + Math.cos(ring * Math.PI * 2) * r,
+        y: y + Math.sin(ring * Math.PI * 2) * 0.15,
+        z: 3.2 + Math.sin(ring * Math.PI * 2) * 0.5,
+        kind: "vert",
       });
     }
 
-    const apexY = targets[verts - 1].y + 1.5;
-    for (let i = 0; i < apexN; i++) {
-      const a = (i / Math.max(apexN - 1, 1)) * Math.PI - Math.PI / 2;
-      const r = 1.2 + (i % 7) * 0.35;
+    for (let i = 0; i < discN; i++) {
+      const t = ((i + 0.5) / discN) * 0.92 + 0.04;
+      const y = (t - 0.5) * 40;
       targets.push({
-        x: spineX + Math.cos(a) * r * 0.55,
-        y: apexY + Math.sin(a) * r + 1.8,
-        z: 5.5 + (i % 3) * 0.4,
+        x: spineX + spinalOffset(t) + gauss() * 0.2,
+        y: y + gauss() * 0.15,
+        z: 3.45 + gauss() * 0.25,
+        kind: "disc",
+      });
+    }
+
+    const ribsPerSide = Math.max(5, Math.floor(ribN / 24));
+    for (let r = 0; r < 12; r++) {
+      const t = 0.36 + (r / 11) * 0.3;
+      const y = (t - 0.5) * 40;
+      const cx = spineX + spinalOffset(t);
+      const len = 2.6 + (r % 4) * 0.45;
+      for (const side of [-1, 1]) {
+        for (let p = 0; p < ribsPerSide; p++) {
+          const u = p / ribsPerSide;
+          const arch = Math.sin(u * Math.PI * 0.85);
+          targets.push({
+            x: cx + side * (0.3 + u * len),
+            y: y - u * u * 1.5 + arch * 0.55,
+            z: 2.6 + arch * 1.8 + (side * 0.15),
+            kind: "rib",
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < pelvisN; i++) {
+      const u = i / Math.max(pelvisN - 1, 1);
+      const y = -20.5 - u * 3.2;
+      const spread = (u - 0.5) * 3.2;
+      targets.push({
+        x: spineX + spinalOffset(0.02) + spread,
+        y,
+        z: 3.1 + u * 0.5,
+        kind: "pelvis",
+      });
+    }
+
+    const headY = vertebraPath[vertebraPath.length - 1].y + 2.4;
+    const headX = spineX + spinalOffset(1);
+    for (let i = 0; i < skullN; i++) {
+      const a = (i / skullN) * Math.PI * 2;
+      const rx = 1.5 + (i % 4) * 0.12;
+      const ry = 2.1 + (i % 5) * 0.1;
+      targets.push({
+        x: headX + Math.cos(a) * rx * (a > Math.PI ? 0.85 : 1),
+        y: headY + Math.sin(a) * ry,
+        z: 3.9 + Math.sin(a * 2) * 0.65,
+        kind: "skull",
       });
     }
 
     while (targets.length < count) {
-      const t = targets.length % verts;
-      targets.push({ ...targets[t], z: targets[t].z + gauss() * 0.5 });
+      const v = targets.length % Math.max(vertN, 1);
+      targets.push({ ...targets[v] });
     }
-    return targets.slice(0, count);
+
+    return { targets: targets.slice(0, count), vertebraPath };
   }
 
   function makeMorphCloud(count) {
     const start = new Float32Array(count * 3);
-    const spine = buildSpineTargets(count);
+    const { targets, vertebraPath } = buildHumanSpine(count);
     const colors = new Float32Array(count * 3);
 
     for (let i = 0; i < count; i++) {
-      start[i * 3] = gauss() * 22;
-      start[i * 3 + 1] = gauss() * 16;
-      start[i * 3 + 2] = gauss() * 14 + 6;
+      start[i * 3] = gauss() * 24;
+      start[i * 3 + 1] = gauss() * 18;
+      start[i * 3 + 2] = gauss() * 16 + 8;
       const c = cloudPalette[Math.floor(Math.random() * cloudPalette.length)];
       colors[i * 3] = c.r;
       colors[i * 3 + 1] = c.g;
@@ -102,43 +176,43 @@
     geo.setAttribute("position", new THREE.BufferAttribute(start.slice(), 3));
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geo.userData.start = start.slice();
-    geo.userData.spine = spine;
+    geo.userData.spine = targets;
+    geo.userData.vertebraPath = vertebraPath;
     return geo;
   }
 
-  const starCount = reduced ? 500 : 1200;
+  const starCount = reduced ? 600 : 1400;
   const starStart = new Float32Array(starCount * 3);
   const starColors = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount; i++) {
-    starStart[i * 3] = (Math.random() - 0.5) * 100;
-    starStart[i * 3 + 1] = (Math.random() - 0.5) * 60;
-    starStart[i * 3 + 2] = (Math.random() - 0.5) * 80 - 10;
-    const g = 0.55 + Math.random() * 0.35;
+    starStart[i * 3] = (Math.random() - 0.5) * 110;
+    starStart[i * 3 + 1] = (Math.random() - 0.5) * 65;
+    starStart[i * 3 + 2] = (Math.random() - 0.5) * 85 - 12;
+    const g = 0.5 + Math.random() * 0.4;
     starColors[i * 3] = g;
-    starColors[i * 3 + 1] = g + 0.08;
-    starColors[i * 3 + 2] = g + 0.15;
+    starColors[i * 3 + 1] = g + 0.06;
+    starColors[i * 3 + 2] = g + 0.12;
   }
   const starGeo = new THREE.BufferGeometry();
   starGeo.setAttribute("position", new THREE.BufferAttribute(starStart, 3));
   starGeo.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
   const starMat = new THREE.PointsMaterial({
-    size: reduced ? 0.1 : 0.16,
+    size: reduced ? 0.08 : 0.14,
     vertexColors: true,
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.5,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const stars = new THREE.Points(starGeo, starMat);
-  scene.add(stars);
+  scene.add(new THREE.Points(starGeo, starMat));
 
-  const morphCount = reduced ? 700 : 2000;
+  const morphCount = reduced ? 900 : 2400;
   const morphGeo = makeMorphCloud(morphCount);
   const morphMat = new THREE.PointsMaterial({
-    size: reduced ? 0.45 : 0.85,
+    size: reduced ? 0.38 : 0.68,
     vertexColors: true,
     transparent: true,
-    opacity: 0.92,
+    opacity: 0.94,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     sizeAttenuation: true,
@@ -146,14 +220,15 @@
   const morphCloud = new THREE.Points(morphGeo, morphMat);
   scene.add(morphCloud);
 
-  const spineLineMat = new THREE.LineBasicMaterial({
-    color: 0x5eead4,
-    transparent: true,
-    opacity: 0,
-  });
+  const spineLineMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0 });
   const spineLineGeo = new THREE.BufferGeometry();
   const spineLine = new THREE.Line(spineLineGeo, spineLineMat);
   scene.add(spineLine);
+
+  const canalMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0 });
+  const canalGeo = new THREE.BufferGeometry();
+  const canalLine = new THREE.Line(canalGeo, canalMat);
+  scene.add(canalLine);
 
   let gateOpen = 0;
   let gateTarget = 0;
@@ -186,78 +261,79 @@
   function updateMorph() {
     const morph = ease(gateOpen);
     const cloudMorph = 1 - morph;
+    const breath = gateOpen > 0.9 ? Math.sin(Date.now() * 0.0012) * 0.04 : 0;
     const pos = morphGeo.getAttribute("position");
     const col = morphGeo.getAttribute("color");
     const start = morphGeo.userData.start;
     const spine = morphGeo.userData.spine;
-    const linePts = [];
+    const path = morphGeo.userData.vertebraPath;
 
     for (let i = 0; i < morphCount; i++) {
       const sx = start[i * 3];
       const sy = start[i * 3 + 1];
       const sz = start[i * 3 + 2];
-      const tx = spine[i].x;
-      const ty = spine[i].y;
-      const tz = spine[i].z;
+      const pt = spine[i];
+      const tx = pt.x;
+      const ty = pt.y * (1 + breath);
+      const tz = pt.z;
 
-      const spread = 1 + cloudMorph * 2.2;
-      const cx = sx * spread;
-      const cy = sy * spread;
-      const cz = sz * spread + cloudMorph * 4;
-
-      pos.array[i * 3] = cx * cloudMorph + tx * morph;
-      pos.array[i * 3 + 1] = cy * cloudMorph + ty * morph;
-      pos.array[i * 3 + 2] = cz * cloudMorph + tz * morph;
+      const spread = 1 + cloudMorph * 2.4;
+      pos.array[i * 3] = sx * spread * cloudMorph + tx * morph;
+      pos.array[i * 3 + 1] = sy * spread * cloudMorph + ty * morph;
+      pos.array[i * 3 + 2] = (sz * spread + cloudMorph * 5) * cloudMorph + tz * morph;
 
       const cp = cloudPalette[i % cloudPalette.length];
-      const sp = spinePalette[i % spinePalette.length];
-      col.array[i * 3] = cp.r * cloudMorph + sp.r * morph;
-      col.array[i * 3 + 1] = cp.g * cloudMorph + sp.g * morph;
-      col.array[i * 3 + 2] = cp.b * cloudMorph + sp.b * morph;
-
-      if (i < spine.length * 0.32 && morph > 0.5) {
-        linePts.push(tx, ty, tz);
-      }
+      const bp = pt.kind === "disc" ? glowPalette[i % glowPalette.length] : bonePalette[i % bonePalette.length];
+      col.array[i * 3] = cp.r * cloudMorph + bp.r * morph;
+      col.array[i * 3 + 1] = cp.g * cloudMorph + bp.g * morph;
+      col.array[i * 3 + 2] = cp.b * cloudMorph + bp.b * morph;
     }
     pos.needsUpdate = true;
     col.needsUpdate = true;
 
-    morphMat.opacity = 0.95 * (0.35 + cloudMorph * 0.65 + morph * 0.45);
-    morphMat.size = (reduced ? 0.45 : 0.85) * (0.7 + morph * 0.55);
+    morphMat.opacity = 0.96 * (0.3 + cloudMorph * 0.7 + morph * 0.55);
+    morphMat.size = (reduced ? 0.38 : 0.68) * (0.7 + morph * 0.5);
 
-    if (linePts.length > 6) {
+    if (morph > 0.4 && path?.length) {
+      const linePts = [];
+      const canalPts = [];
+      path.forEach((p) => {
+        linePts.push(p.x, p.y * (1 + breath), p.z);
+        canalPts.push(p.x + 0.35, p.y * (1 + breath), p.z + 0.15);
+      });
       spineLineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePts, 3));
-      spineLineMat.opacity = morph * 0.35;
+      canalGeo.setAttribute("position", new THREE.Float32BufferAttribute(canalPts, 3));
+      spineLineMat.opacity = morph * 0.45;
+      canalMat.opacity = morph * 0.22;
     } else {
       spineLineMat.opacity = 0;
+      canalMat.opacity = 0;
     }
   }
 
   let t = 0;
   function animate() {
     requestAnimationFrame(animate);
-    t += reduced ? 0.002 : 0.006;
-    gateOpen += (gateTarget - gateOpen) * 0.04;
+    t += reduced ? 0.002 : 0.005;
+    gateOpen += (gateTarget - gateOpen) * 0.038;
     updateMorph();
 
     const morph = ease(gateOpen);
-    morphCloud.rotation.y = t * 0.08 * (1 - morph * 0.85);
-    morphCloud.rotation.z = Math.sin(t * 0.35) * 0.04 * (1 - morph);
-    stars.rotation.y = t * 0.04;
+    morphCloud.rotation.y = t * 0.06 * (1 - morph * 0.9);
+    morphCloud.rotation.z = Math.sin(t * 0.28) * 0.03 * (1 - morph);
 
-    camera.position.z = 20 - morph * 5;
-    const targetX = -3.5 * morph + mouseX * (2.2 - morph);
-    const targetY = -mouseY * (2 - morph);
-    camera.position.x += (targetX - camera.position.x) * 0.03;
-    camera.position.y += (targetY - camera.position.y) * 0.03;
-    camera.lookAt(-4 * morph, morph * 2, 0);
+    camera.position.z = 22 - morph * 6;
+    const targetX = -4 * morph + mouseX * (2.4 - morph);
+    const targetY = -mouseY * (2.2 - morph);
+    camera.position.x += (targetX - camera.position.x) * 0.032;
+    camera.position.y += (targetY - camera.position.y) * 0.032;
+    camera.lookAt(-4.5 * morph, morph * 1.5, 0);
 
-    starMat.opacity = 0.4 + morph * 0.25;
     renderer.render(scene, camera);
   }
   animate();
 
-  document.querySelectorAll(".holo-panel, .holo-tile, .appbar").forEach((el) => {
+  document.querySelectorAll(".holo-panel, .holo-tile, .appbar, .bluf-banner").forEach((el) => {
     el.addEventListener("mousemove", (e) => {
       if (!document.body.classList.contains("gate-open")) return;
       const r = el.getBoundingClientRect();
