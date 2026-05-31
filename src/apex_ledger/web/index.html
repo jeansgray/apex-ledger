@@ -539,15 +539,6 @@
         <!-- Verdict → Moves → Actions (full width) -->
         <article class="card verdict" id="verdict"></article>
 
-        <article class="card" id="moves-block">
-          <div class="card-head">
-            <h2>Suggested moves</h2>
-            <span class="tag">Review first</span>
-          </div>
-          <div id="sim-banner" class="sim-banner" hidden></div>
-          <div id="suggested-moves"></div>
-          <div id="moves-gate" hidden></div>
-        </article>
 
         <article class="card">
           <div class="card-head"><h2>Next steps</h2></div>
@@ -826,33 +817,7 @@
         '<div class="bottom"><strong>Bottom line:</strong> ' + esc(brief.bottom_line) + "</div>";
     }
 
-    function renderMoves(brief, state) {
-      const moves = brief.suggested_moves || state.suggested_moves || [];
-      document.getElementById("moves-block").hidden = moves.length === 0;
-      const factory = state.simulation_factory || {};
-      const banner = document.getElementById("sim-banner");
-      if (state.status === "simulation_running" || factory.status === "running") {
-        banner.hidden = false;
-        banner.className = "sim-banner running";
-        banner.textContent = factory.message || "Building scenario simulation…";
-      } else if (factory.message) {
-        banner.hidden = false;
-        banner.className = "sim-banner";
-        banner.textContent = factory.message;
-      } else {
-        banner.hidden = true;
-      }
-
-      document.getElementById("suggested-moves").innerHTML = moves.map(m =>
-        '<div class="move"><div class="move-top"><div><div class="move-kicker">' +
-        esc(m.symbol) + " · " + esc(actionLabel(m.action)) + '</div><h4>' + esc(m.title) +
-        '</h4></div><span class="signal-chip ' + (m.signal_agreement === "mixed" ? "signal-mixed" : "signal-aligned") + '">' +
-        Math.round(Number(m.confidence || 0) * 100) + '%</span></div><p>' + esc(m.rationale) + '</p>' +
-        (m.amount_usd != null ? '<div class="move-meta"><span>$' + Number(m.amount_usd).toLocaleString() + "</span></div>" : "") +
-        "</div>"
-      ).join("");
-      renderGate("moves-gate", "investment_moves", "Save these moves?", "Save", "Skip");
-    }
+    function renderMoves(brief, state) { /* Suggested Moves removed */ }
 
     function renderActions(brief) {
       document.getElementById("actions").innerHTML = (brief.action_items || []).map(item => {
