@@ -8,6 +8,9 @@ import httpx
 
 from ..config import Settings
 from ..data.alpha_vantage import AlphaVantageClient
+from ..data.stocktwits import StockTwitsClient
+from ..data.fred import FredClient
+from ..data.finnhub import FinnhubClient
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -60,6 +63,17 @@ class CouncilOrchestrator:
         self.alpha_vantage = AlphaVantageClient(
             settings.alpha_vantage_api_key,
             cache_dir=settings.apex_data_dir / "av_cache",
+        )
+        self.stocktwits = StockTwitsClient(
+            cache_dir=settings.apex_data_dir / "stocktwits_cache",
+        )
+        self.fred = FredClient(
+            api_key=settings.fred_api_key,
+            cache_dir=settings.apex_data_dir / "fred_cache",
+        )
+        self.finnhub = FinnhubClient(
+            settings.finnhub_api_key,
+            cache_dir=settings.apex_data_dir / "finnhub_cache",
         )
         self._runs: dict[str, CouncilRunState] = {}
 
@@ -325,11 +339,9 @@ class CouncilOrchestrator:
         symbols = list(dict.fromkeys(h["symbol"] for h in holdings[:5]))
         state.research_notes.append(f"[portfolio] Current holdings: {', '.join(symbols)}.")
 
-        # Alpha Vantage: news/sentiment across all symbols
+        # Alpha Vantage: news/sentiment + per-symbol earnings + fundamentals
         news = self.alpha_vantage.news_sentiment(symbols)
         state.research_notes.extend(news)
-
-        # Alpha Vantage: per-symbol earnings + fundamentals
         fundamental_count = 0
         for symbol in symbols:
             earnings = self.alpha_vantage.earnings_summary(symbol)
@@ -338,13 +350,37 @@ class CouncilOrchestrator:
             state.research_notes.extend(overview)
             fundamental_count += len(earnings) + len(overview)
 
+        # StockTwits: retail Bullish/Bearish sentiment per holding
+        st_bullets = self.stocktwits.sentiment_summary(symbols)
+        state.research_notes.extend(st_bullets)
+
+        # FRED: macro indicators — VIX, CPI, Fed funds rate, Treasury yield
+        macro_bullets = self.fred.macro_summary()
+        state.research_notes.extend(macro_bullets)
+
+        # Finnhub: analyst ratings + earnings surprises per holding
+        finnhub_count = 0
+        for symbol in symbols:
+            ratings = self.finnhub.analyst_ratings(symbol)
+            surprises = self.finnhub.earnings_surprise(symbol)
+            state.research_notes.extend(ratings)
+            state.research_notes.extend(surprises)
+            finnhub_count += len(ratings) + len(surprises)
+
         parts = []
         if news:
-            parts.append(f"{len(news)} news item(s)")
+            parts.append(f"{len(news)} AV news")
         if fundamental_count:
-            parts.append(f"{fundamental_count} fundamental data point(s)")
-        av_note = f"Alpha Vantage: {', '.join(parts)}." if parts else "Alpha Vantage: rate limit hit — cached data will be used on next run."
-        state.agent_outputs["research_curator"] = av_note
+            parts.append(f"{fundamental_count} fundamentals")
+        if st_bullets:
+            parts.append(f"{len(st_bullets)} StockTwits signals")
+        if macro_bullets:
+            parts.append(f"{len(macro_bullets)} FRED macro indicators")
+        if finnhub_count:
+            parts.append(f"{finnhub_count} Finnhub analyst data point(s)")
+        state.agent_outputs["research_curator"] = (
+            f"Research: {', '.join(parts)}." if parts else "Research: no live data available."
+        )
 
     def _run_scenario_cartographer(
         self,

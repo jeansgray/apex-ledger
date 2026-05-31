@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     llm_model_name: str = "gpt-4o-mini"
 
     alpha_vantage_api_key: str = ""
+    finnhub_api_key: str = ""
+    fred_api_key: str = ""
 
     # Future bank sync (Plaid) — set in .env when ready
     plaid_client_id: str = ""
