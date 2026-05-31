@@ -450,6 +450,67 @@ def schwab_disconnect() -> dict:
     return {"ok": True}
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+    context_snapshot: dict | None = None
+
+
+@app.post("/chat")
+def chat_with_advisor(req: ChatRequest) -> dict:
+    import json as _json
+
+    from openai import OpenAI
+
+    api_key = _settings.llm_api_key
+    if not api_key:
+        raise HTTPException(status_code=503, detail="LLM API key not configured")
+
+    client = OpenAI(api_key=api_key, base_url=_settings.llm_base_url)
+
+    portfolio = _orchestrator.ledger.portfolio_snapshot()
+    holdings = portfolio.get("holdings", [])
+    holdings_text = _json.dumps(holdings, indent=2)[:1500] if holdings else "No holdings on file."
+
+    system_prompt = (
+        "You are an Apex Ledger financial intelligence assistant — sharp, data-driven, and direct. "
+        "Help the user understand their portfolio, interpret analysis results, and make smarter investment decisions. "
+        "Be concise. Skip boilerplate disclaimers unless asked. Reference the data provided when relevant.\n\n"
+        f"Current portfolio holdings:\n{holdings_text}"
+    )
+
+    if req.context_snapshot:
+        ctx = _json.dumps(req.context_snapshot, indent=2)[:2500]
+        system_prompt += f"\n\nLatest council analysis (from the current session):\n{ctx}"
+
+    messages: list[dict] = [{"role": "system", "content": system_prompt}]
+    for msg in req.history[-12:]:
+        messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": req.message})
+
+    try:
+        resp = client.chat.completions.create(
+            model=_settings.llm_model_name,
+            messages=messages,
+            max_tokens=700,
+            temperature=0.65,
+        )
+        reply = resp.choices[0].message.content or ""
+        return {"reply": reply}
+    except Exception as exc:
+        msg = str(exc)
+        if "insufficient_quota" in msg or "429" in msg:
+            raise HTTPException(status_code=402, detail="LLM quota exceeded — add credits to your OpenAI account.") from exc
+        if "401" in msg or "Incorrect API key" in msg:
+            raise HTTPException(status_code=401, detail="LLM API key is invalid.") from exc
+        raise HTTPException(status_code=500, detail=f"LLM error: {msg[:200]}") from exc
+
+
 @app.post("/ledger/import-schwab")
 async def import_schwab_csv(file: UploadFile = File(...)) -> dict:
     raw = (await file.read()).decode("utf-8")
