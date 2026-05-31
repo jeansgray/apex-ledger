@@ -91,7 +91,7 @@ class FredClient:
 
     def _fetch_fred(self, series_id: str) -> str | None:
         try:
-            with httpx.Client(timeout=5.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 response = client.get(FRED_BASE, params={
                     "series_id": series_id,
                     "api_key": self.api_key,

@@ -41,7 +41,7 @@ class StockTwitsClient:
         if data is None:
             try:
                 headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
-                with httpx.Client(timeout=5.0, headers=headers) as client:
+                with httpx.Client(timeout=10.0, headers=headers) as client:
                     response = client.get(
                         f"{BASE_URL}/{symbol}.json",
                         params={"limit": 30},
