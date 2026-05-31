@@ -253,6 +253,30 @@ def reset_demo_ledger() -> dict:
     return detail
 
 
+@app.get("/ticker")
+def ticker_prices() -> dict:
+    from ..data.universe import CURATED_UNIVERSE
+    watchlist = _orchestrator.ledger.list_watchlist()
+    holding_symbols = [h.get("symbol", "") for h in _orchestrator.ledger.portfolio_snapshot().get("holdings", [])]
+    symbols = list(dict.fromkeys(holding_symbols + watchlist + CURATED_UNIVERSE))[:25]
+    try:
+        forecasts = _orchestrator.kronos.forecast_symbols(symbols, pred_len=5, lookback=30)
+        return {
+            "tickers": [
+                {
+                    "symbol": f.symbol,
+                    "price": f.last_close,
+                    "change_pct": f.return_pct,
+                    "direction": f.direction,
+                }
+                for f in forecasts
+                if f.last_close
+            ]
+        }
+    except Exception:
+        return {"tickers": []}
+
+
 @app.get("/watchlist")
 def get_watchlist() -> dict:
     return {"symbols": _orchestrator.ledger.list_watchlist()}

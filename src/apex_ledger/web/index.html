@@ -31,6 +31,47 @@
       line-height: 1.5;
       background-image: radial-gradient(ellipse 70% 45% at 50% -15%, rgba(14, 165, 233, 0.12), transparent);
     }
+    /* ── Live Ticker Bar ── */
+    .ticker-bar {
+      width: 100%; background: #080d18;
+      border-bottom: 1px solid var(--line);
+      overflow: hidden; height: 34px;
+      display: flex; align-items: center;
+      position: relative;
+    }
+    .ticker-label {
+      flex-shrink: 0; padding: 0 0.75rem;
+      font-size: 0.6rem; font-weight: 900; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--accent);
+      background: #080d18; z-index: 2;
+      border-right: 1px solid var(--line);
+      height: 100%; display: flex; align-items: center;
+      white-space: nowrap;
+    }
+    .ticker-track-wrap { flex: 1; overflow: hidden; height: 100%; }
+    .ticker-track {
+      display: flex; gap: 0; white-space: nowrap;
+      animation: ticker-scroll 60s linear infinite;
+      height: 100%; align-items: center;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0 1.1rem; font-size: 0.72rem; border-right: 1px solid rgba(255,255,255,0.04);
+      height: 100%;
+    }
+    .ticker-sym { font-weight: 800; color: var(--text); }
+    .ticker-price { color: var(--muted); }
+    .ticker-chg { font-weight: 700; }
+    .ticker-chg.up { color: var(--ok); }
+    .ticker-chg.down { color: var(--danger); }
+    .ticker-chg.flat { color: var(--muted); }
+    .ticker-arrow { font-size: 0.65rem; }
+
     .shell { max-width: var(--max); margin: 0 auto; padding: 0 1rem 4rem; }
 
     /* ── Wireframe zone 1: App bar ── */
@@ -383,12 +424,26 @@
     }
 
     /* ── Research Feed panel ── */
-    .research-section { margin-bottom: 1.25rem; }
-    .research-section h3 {
-      margin: 0 0 0.6rem; font-size: 0.75rem; text-transform: uppercase;
-      letter-spacing: 0.07em; color: var(--muted); font-weight: 700;
-      border-bottom: 1px solid var(--line); padding-bottom: 0.4rem;
+    .research-feed-grid {
+      display: grid; gap: 1rem;
     }
+    @media (min-width: 800px) { .research-feed-grid { grid-template-columns: 1fr 1fr; } }
+    .research-col {}
+    .research-section { margin-bottom: 1.1rem; }
+    .research-section h3 {
+      margin: 0 0 0.5rem; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--accent); font-weight: 800;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .research-section h3::after {
+      content: ""; flex: 1; height: 1px; background: var(--line);
+    }
+    .news-item {
+      display: flex; gap: 0.55rem; padding: 0.55rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .news-item:last-child { border-bottom: 0; }
+    .news-item-actions { display: flex; align-items: flex-start; gap: 0.3rem; margin-left: auto; padding-left: 0.4rem; flex-shrink: 0; }
     .news-item {
       display: flex; gap: 0.65rem; padding: 0.65rem 0;
       border-bottom: 1px solid var(--line);
@@ -426,6 +481,16 @@
   </style>
 </head>
 <body>
+  <!-- Live scrolling ticker -->
+  <div class="ticker-bar" id="ticker-bar">
+    <span class="ticker-label">&#9646; LIVE</span>
+    <div class="ticker-track-wrap">
+      <div class="ticker-track" id="ticker-track">
+        <span class="ticker-item"><span class="ticker-sym">Loading…</span></span>
+      </div>
+    </div>
+  </div>
+
   <div class="shell">
     <!-- ZONE 1: App bar -->
     <header class="appbar">
@@ -573,12 +638,58 @@
         </article>
       </div>
 
+      <!-- Research Feed — always visible after run -->
+      <article class="card" id="research-feed-card" hidden>
+        <div class="card-head" style="margin-bottom:0.75rem">
+          <h2>Research Feed</h2>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <div class="watchlist-row" style="margin:0">
+              <input id="wl-input" placeholder="Watch ticker…" maxlength="12" style="text-transform:uppercase;width:130px" />
+              <button class="btn-ok" type="button" id="wl-add-btn">+Watch</button>
+            </div>
+          </div>
+        </div>
+        <div class="watchlist-chips" id="wl-chips" style="margin-bottom:0.75rem"><p class="empty" style="margin:0">No watchlist symbols yet.</p></div>
+
+        <div class="research-feed-grid">
+          <!-- Left col: News + Analyst -->
+          <div class="research-col">
+            <div class="research-section" id="research-news-section">
+              <h3>Live News</h3>
+              <div id="research-news"><p class="empty">Run analysis to load news.</p></div>
+            </div>
+            <div class="research-section" id="research-analyst-section">
+              <h3>Analyst Ratings &amp; Earnings</h3>
+              <div id="research-analyst"><p class="empty">No analyst data yet.</p></div>
+            </div>
+            <div class="research-section" id="research-macro-section">
+              <h3>Macro Indicators</h3>
+              <div id="research-macro"><p class="empty">No macro data yet.</p></div>
+            </div>
+          </div>
+          <!-- Right col: Social + Risk + Glossary -->
+          <div class="research-col">
+            <div class="research-section">
+              <h3>Trending on Social</h3>
+              <div class="trending-grid" id="research-trending"><p class="empty">Run analysis to load trending.</p></div>
+            </div>
+            <div class="research-section" id="research-risk-section">
+              <h3>Risk &amp; Compliance Flags</h3>
+              <div id="research-risk"><p class="empty">No flags.</p></div>
+            </div>
+            <div class="research-section" id="research-glossary-section">
+              <h3>Financial Terms Glossary</h3>
+              <div class="glossary-grid" id="research-glossary"><p class="empty">No terms detected yet.</p></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
       <!-- ZONE 4: Tabbed secondary content -->
       <nav class="tabs" role="tablist" aria-label="Details">
         <button class="tab active" data-tab="scenarios" type="button">Scenarios</button>
         <button class="tab" data-tab="portfolio" type="button">Portfolio</button>
         <button class="tab" data-tab="records" type="button">Records</button>
-        <button class="tab" data-tab="research" type="button">Research Feed</button>
         <button class="tab" data-tab="behind" type="button">Behind the scenes</button>
       </nav>
 
@@ -594,49 +705,10 @@
         <div id="bookkeeping"></div>
         <div id="recon-gate" hidden></div>
       </div>
-      <div class="tab-panel card" id="panel-research">
-        <!-- Watchlist manager -->
-        <div class="research-section">
-          <h3>My Watchlist</h3>
-          <div class="watchlist-row">
-            <input id="wl-input" placeholder="Add ticker (e.g. NVDA)" maxlength="12" style="text-transform:uppercase" />
-            <button class="btn-ok" type="button" id="wl-add-btn">Add</button>
-          </div>
-          <div class="watchlist-chips" id="wl-chips"><p class="empty">No watchlist symbols yet.</p></div>
-        </div>
-
-        <!-- Trending on social -->
-        <div class="research-section">
-          <h3>Trending on Social (Reddit · WSB · r/stocks)</h3>
-          <div class="trending-grid" id="research-trending"><p class="empty">Run analysis to load trending.</p></div>
-        </div>
-
-        <div class="research-section" id="research-news-section">
-          <h3>Live News</h3>
-          <div id="research-news"><p class="empty">Run analysis to load news.</p></div>
-        </div>
-        <div class="research-section" id="research-analyst-section">
-          <h3>Analyst Ratings &amp; Earnings</h3>
-          <div id="research-analyst"><p class="empty">No analyst data yet.</p></div>
-        </div>
-        <div class="research-section" id="research-macro-section">
-          <h3>Macro Indicators</h3>
-          <div id="research-macro"><p class="empty">No macro data yet.</p></div>
-        </div>
-        <div class="research-section" id="research-risk-section">
-          <h3>Risk &amp; Compliance Flags</h3>
-          <div id="research-risk"><p class="empty">No flags.</p></div>
-        </div>
-        <div class="research-section" id="research-glossary-section">
-          <h3>Financial Terms Glossary</h3>
-          <div class="glossary-grid" id="research-glossary"><p class="empty">No terms detected yet.</p></div>
-        </div>
-      </div>
-
       <div class="tab-panel card" id="panel-behind">
         <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Council debate</h3>
         <ul id="council-debate" style="padding:0;margin:0 0 1rem"></ul>
-        <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Research & context</h3>
+        <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Research &amp; context</h3>
         <ul id="research" style="padding-left:1rem;color:var(--muted);font-size:0.85rem"></ul>
         <ul id="insights" style="padding-left:1rem;color:var(--muted);font-size:0.85rem;margin-top:0.75rem"></ul>
         <div id="watch-outs" style="margin-top:1rem"></div>
@@ -1064,6 +1136,7 @@
       renderActions(brief);
       renderTabs(brief);
       renderResearchFeed(state);
+      document.getElementById("research-feed-card").hidden = false;
       renderRecommendedBuys(state);
       scheduleRefresh(state);
     }
@@ -1427,6 +1500,37 @@
 
     loadLedger();
     loadWatchlist();
+
+    // ── Live Ticker ──────────────────────────────────────────
+    async function loadTicker() {
+      try {
+        const data = await fetch("/ticker").then(r => r.json());
+        const tickers = data.tickers || [];
+        if (!tickers.length) return;
+        const track = document.getElementById("ticker-track");
+        const items = tickers.map(t => {
+          const dir = t.direction || "flat";
+          const cls = dir === "up" ? "up" : dir === "down" ? "down" : "flat";
+          const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "▸";
+          const sign = t.change_pct >= 0 ? "+" : "";
+          const chg = sign + Number(t.change_pct || 0).toFixed(2) + "%";
+          const price = t.price ? "$" + Number(t.price).toFixed(2) : "";
+          return '<span class="ticker-item">' +
+            '<span class="ticker-sym">' + esc(t.symbol) + '</span>' +
+            (price ? '<span class="ticker-price">' + esc(price) + '</span>' : '') +
+            '<span class="ticker-chg ' + cls + '"><span class="ticker-arrow">' + arrow + '</span> ' + esc(chg) + '</span>' +
+            '</span>';
+        }).join("");
+        // Duplicate for seamless loop
+        track.innerHTML = items + items;
+        // Adjust animation speed to content width
+        const totalWidth = track.scrollWidth / 2;
+        const speed = Math.max(30, totalWidth / 8);
+        track.style.animationDuration = speed + "s";
+      } catch (_) {}
+    }
+    loadTicker();
+    setInterval(loadTicker, 120000); // refresh every 2 min
   </script>
 </body>
 </html>
