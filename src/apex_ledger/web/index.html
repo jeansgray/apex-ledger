@@ -235,6 +235,48 @@
     .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
     .toolbar button { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
     .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.35); }
+
+    /* ── Research Feed panel ── */
+    .research-section { margin-bottom: 1.25rem; }
+    .research-section h3 {
+      margin: 0 0 0.6rem; font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); font-weight: 700;
+      border-bottom: 1px solid var(--line); padding-bottom: 0.4rem;
+    }
+    .news-item {
+      display: flex; gap: 0.65rem; padding: 0.65rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .news-item:last-child { border-bottom: 0; }
+    .news-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      margin-top: 0.55rem; background: var(--accent);
+    }
+    .news-dot.you { background: var(--accent); }
+    .news-dot.analyst { background: var(--ok); }
+    .news-dot.macro { background: var(--warn); }
+    .news-dot.risk { background: var(--danger); }
+    .news-body { min-width: 0; }
+    .news-source {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.2rem;
+    }
+    .news-text { font-size: 0.85rem; line-height: 1.45; }
+    .news-link { font-size: 0.75rem; color: var(--accent); word-break: break-all; }
+    .glossary-grid { display: grid; gap: 0.5rem; }
+    @media (min-width: 600px) { .glossary-grid { grid-template-columns: 1fr 1fr; } }
+    .glossary-card {
+      border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem;
+      background: var(--surface-2);
+    }
+    .glossary-term { font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 0.25rem; }
+    .glossary-def { font-size: 0.8rem; color: var(--muted); line-height: 1.45; }
+    .risk-item {
+      padding: 0.55rem 0.7rem; border-radius: 8px; font-size: 0.82rem;
+      background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.15);
+      margin-bottom: 0.4rem; color: var(--text);
+    }
+    .risk-item:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -385,6 +427,7 @@
         <button class="tab active" data-tab="scenarios" type="button">Scenarios</button>
         <button class="tab" data-tab="portfolio" type="button">Portfolio</button>
         <button class="tab" data-tab="records" type="button">Records</button>
+        <button class="tab" data-tab="research" type="button">Research Feed</button>
         <button class="tab" data-tab="behind" type="button">Behind the scenes</button>
       </nav>
 
@@ -400,6 +443,29 @@
         <div id="bookkeeping"></div>
         <div id="recon-gate" hidden></div>
       </div>
+      <div class="tab-panel card" id="panel-research">
+        <div class="research-section" id="research-news-section">
+          <h3>Live News</h3>
+          <div id="research-news"><p class="empty">Run analysis to load news.</p></div>
+        </div>
+        <div class="research-section" id="research-analyst-section">
+          <h3>Analyst Ratings &amp; Earnings</h3>
+          <div id="research-analyst"><p class="empty">No analyst data yet.</p></div>
+        </div>
+        <div class="research-section" id="research-macro-section">
+          <h3>Macro Indicators</h3>
+          <div id="research-macro"><p class="empty">No macro data yet.</p></div>
+        </div>
+        <div class="research-section" id="research-risk-section">
+          <h3>Risk &amp; Compliance Flags</h3>
+          <div id="research-risk"><p class="empty">No flags.</p></div>
+        </div>
+        <div class="research-section" id="research-glossary-section">
+          <h3>Financial Terms Glossary</h3>
+          <div class="glossary-grid" id="research-glossary"><p class="empty">No terms detected yet.</p></div>
+        </div>
+      </div>
+
       <div class="tab-panel card" id="panel-behind">
         <h3 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Council debate</h3>
         <ul id="council-debate" style="padding:0;margin:0 0 1rem"></ul>
@@ -728,6 +794,54 @@
       return brief;
     }
 
+    function renderResearchFeed(state) {
+      const notes = state.research_notes || [];
+      const flags = state.risk_flags || [];
+      const glossary = state.glossary || {};
+
+      // Split notes by tag prefix
+      const news = notes.filter(n => /^\[you\.com\/news\]|\[AV\/news\]/i.test(n));
+      const analyst = notes.filter(n => /^\[analyst\]|\[earnings\]/i.test(n));
+      const macro = notes.filter(n => /^\[macro\]/i.test(n));
+
+      function newsHtml(items, dotCls) {
+        if (!items.length) return '<p class="empty">None available.</p>';
+        return items.map(n => {
+          // Parse "SOURCE: title. desc Source: url" format
+          const srcMatch = n.match(/^\[([^\]]+)\]/);
+          const src = srcMatch ? srcMatch[1] : "data";
+          const body = n.replace(/^\[[^\]]+\]\s*/, "");
+          const urlMatch = body.match(/Source:\s*(https?:\/\/\S+)/i);
+          const url = urlMatch ? urlMatch[1] : null;
+          const text = body.replace(/\s*Source:\s*https?:\/\/\S+/i, "").trim();
+          return '<div class="news-item">' +
+            '<div class="news-dot ' + dotCls + '"></div>' +
+            '<div class="news-body">' +
+            '<div class="news-source">' + esc(src) + '</div>' +
+            '<div class="news-text">' + esc(text) + '</div>' +
+            (url ? '<a class="news-link" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url.replace(/^https?:\/\//, "").split("/")[0]) + '</a>' : "") +
+            '</div></div>';
+        }).join("");
+      }
+
+      document.getElementById("research-news").innerHTML = newsHtml(news, "you");
+      document.getElementById("research-analyst").innerHTML = newsHtml(analyst, "analyst");
+      document.getElementById("research-macro").innerHTML = newsHtml(macro, "macro");
+
+      document.getElementById("research-risk").innerHTML = flags.length
+        ? flags.map(f => '<div class="risk-item">' + esc(f) + '</div>').join("")
+        : '<p class="empty">No flags.</p>';
+
+      const terms = Object.entries(glossary);
+      document.getElementById("research-glossary").innerHTML = terms.length
+        ? terms.map(([term, def]) =>
+            '<div class="glossary-card">' +
+            '<div class="glossary-term">' + esc(term) + '</div>' +
+            '<div class="glossary-def">' + esc(def) + '</div></div>'
+          ).join("")
+        : '<p class="empty">No financial terms detected in this run.</p>';
+    }
+
     function renderResults(state) {
       chartAnimators.forEach(id => cancelAnimationFrame(id));
       chartAnimators.length = 0;
@@ -739,6 +853,7 @@
       renderMoves(brief, state);
       renderActions(brief);
       renderTabs(brief);
+      renderResearchFeed(state);
       scheduleRefresh(state);
     }
 
