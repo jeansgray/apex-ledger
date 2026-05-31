@@ -10,10 +10,14 @@ from ..config import Settings
 from ..data.alpha_vantage import AlphaVantageClient
 from ..data.stocktwits import StockTwitsClient
 from ..data.fred import FredClient
+from ..data.finbert import FinBertScorer
 from ..data.finnhub import FinnhubClient
 from ..data.glossary import extract_terms
+from ..data.reddit import RedditSentimentClient
+from ..data.universe import full_universe
 from ..data.web_search import ComplianceSearchClient
 from ..data.you_search import YouSearchClient
+from .scanner import score_universe
 from ..ledger.reconciliation import propose_reconciliation
 from ..ledger.store import LedgerStore
 from ..kronos.client import KronosClient
@@ -86,6 +90,12 @@ class CouncilOrchestrator:
             settings.you_api_key,
             cache_dir=settings.apex_data_dir / "you_cache",
         )
+        self.reddit = RedditSentimentClient(
+            cache_dir=settings.apex_data_dir / "reddit_cache",
+        )
+        self.finbert = FinBertScorer(
+            cache_dir=settings.apex_data_dir / "finbert_cache",
+        )
         self._runs: dict[str, CouncilRunState] = {}
 
     def run(
@@ -119,6 +129,7 @@ class CouncilOrchestrator:
             self._run_scenario_synthesizer(state, topic)
             self._run_recommendation_engine(state, topic)
             state.glossary = extract_terms(state.research_notes + state.risk_flags + state.simulation_insights)
+            self._run_stock_scanner(state)
             state.friendly_brief = build_friendly_brief(state, topic).model_dump()
             state.status = "awaiting_human" if state.simulation_factory.get("status") != "running" else "simulation_running"
         except Exception as exc:  # noqa: BLE001
@@ -293,7 +304,11 @@ class CouncilOrchestrator:
         if not self.settings.apex_use_kronos:
             state.agent_outputs["quant_forecaster"] = "Kronos forecasts disabled."
             return
-        symbols = [h.get("symbol", "") for h in state.portfolio_snapshot.get("holdings", [])]
+        holding_symbols = [h.get("symbol", "") for h in state.portfolio_snapshot.get("holdings", [])]
+        watchlist = self.ledger.list_watchlist()
+        from ..data.universe import CURATED_UNIVERSE
+        extra = [s for s in CURATED_UNIVERSE if s not in holding_symbols and s not in watchlist][:7]
+        symbols = list(dict.fromkeys(holding_symbols + watchlist + extra))
         try:
             forecasts = self.kronos.forecast_symbols(
                 symbols,
@@ -455,6 +470,48 @@ class CouncilOrchestrator:
             state.scenario_brief["base"] = (
                 f"{topic.scenario_base} Simulation: {state.simulation_insights[0][:220]}"
             )
+
+    def _run_stock_scanner(self, state: CouncilRunState) -> None:
+        try:
+            trending = self.reddit.trending(top_n=15)
+            state.trending_social = trending
+        except Exception:
+            trending = []
+
+        watchlist = self.ledger.list_watchlist()
+        universe = full_universe(watchlist)
+
+        try:
+            scored = score_universe(
+                universe,
+                kronos=self.kronos,
+                finnhub=self.finnhub,
+                you_search=self.you_search,
+                forecast_days=self.settings.kronos_forecast_days,
+                social_trending=trending,
+                finbert=self.finbert,
+            )
+            state.recommended_buys = [
+                {
+                    "symbol": s.symbol,
+                    "score": s.score,
+                    "direction": s.direction,
+                    "return_pct": s.return_pct,
+                    "horizon_days": s.horizon_days,
+                    "analyst_note": s.analyst_note,
+                    "top_headline": s.top_headline,
+                    "headline_url": s.headline_url,
+                    "social_mentions": s.social_mentions,
+                    "reasoning": s.reasoning,
+                }
+                for s in scored[:5]
+            ]
+            state.agent_outputs["stock_scanner"] = (
+                f"Scanned {len(universe)} symbols — top pick: {scored[0].symbol} ({scored[0].score:.0f}/100)."
+                if scored else "Scanner: no results."
+            )
+        except Exception as exc:
+            state.agent_outputs["stock_scanner"] = f"Scanner error: {exc}"
 
     def council_manifest(self) -> str:
         lines = ["# Apex Council", "", self.skills.catalog_for_prompt(), ""]
