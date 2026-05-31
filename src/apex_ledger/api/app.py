@@ -253,6 +253,27 @@ def reset_demo_ledger() -> dict:
     return detail
 
 
+@app.get("/watchlist")
+def get_watchlist() -> dict:
+    return {"symbols": _orchestrator.ledger.list_watchlist()}
+
+
+class WatchlistAdd(BaseModel):
+    symbol: str = Field(min_length=1, max_length=12)
+
+
+@app.post("/watchlist")
+def add_watchlist(body: WatchlistAdd) -> dict:
+    _orchestrator.ledger.add_to_watchlist(body.symbol)
+    return {"symbols": _orchestrator.ledger.list_watchlist()}
+
+
+@app.delete("/watchlist/{symbol}")
+def remove_watchlist(symbol: str) -> dict:
+    _orchestrator.ledger.remove_from_watchlist(symbol)
+    return {"symbols": _orchestrator.ledger.list_watchlist()}
+
+
 @app.post("/ledger/import-csv")
 async def import_holdings_csv(file: UploadFile = File(...)) -> dict:
     import csv

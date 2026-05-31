@@ -39,6 +39,12 @@ CREATE TABLE IF NOT EXISTS decision_memos (
     approved INTEGER NOT NULL,
     payload_json TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS watchlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL UNIQUE,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -276,6 +282,22 @@ class LedgerStore:
                 """,
                 (category, memo, transaction_id),
             )
+
+    def list_watchlist(self) -> list[str]:
+        with self.connection() as conn:
+            rows = conn.execute("SELECT symbol FROM watchlist ORDER BY symbol").fetchall()
+        return [row["symbol"] for row in rows]
+
+    def add_to_watchlist(self, symbol: str) -> None:
+        with self.connection() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO watchlist (symbol) VALUES (?)",
+                (symbol.upper(),),
+            )
+
+    def remove_from_watchlist(self, symbol: str) -> None:
+        with self.connection() as conn:
+            conn.execute("DELETE FROM watchlist WHERE symbol = ?", (symbol.upper(),))
 
     def record_decision_memo(
         self,

@@ -236,6 +236,60 @@
     .toolbar button { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
     .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.35); }
 
+    /* ── Recommended Buys card ── */
+    .rec-card { margin-bottom: 1.25rem; }
+    .rec-grid { display: grid; gap: 0.65rem; }
+    @media (min-width: 700px) { .rec-grid { grid-template-columns: repeat(5, 1fr); } }
+    .rec-item {
+      border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem;
+      background: var(--surface-2); position: relative; overflow: hidden;
+    }
+    .rec-item.top-pick { border-color: rgba(52,211,153,0.4); }
+    .rec-rank {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.3rem;
+    }
+    .rec-symbol { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .rec-score {
+      font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem;
+      border-radius: 999px; background: rgba(52,211,153,0.12);
+      color: var(--ok); display: inline-block; margin-bottom: 0.4rem;
+    }
+    .rec-pct { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .rec-pct.up { color: var(--ok); }
+    .rec-pct.flat { color: var(--muted); }
+    .rec-analyst { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .rec-headline {
+      font-size: 0.72rem; color: var(--muted); line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .rec-social { font-size: 0.68rem; color: var(--accent); margin-top: 0.3rem; }
+
+    /* ── Trending social ── */
+    .trending-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .trend-chip {
+      display: flex; align-items: center; gap: 0.35rem;
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 0.25rem 0.6rem; font-size: 0.78rem; background: var(--surface-2);
+    }
+    .trend-chip .sym { font-weight: 800; }
+    .trend-chip .cnt { color: var(--muted); font-size: 0.7rem; }
+
+    /* ── Watchlist manager ── */
+    .watchlist-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .watchlist-row input { flex: 1; }
+    .watchlist-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .wl-chip {
+      display: flex; align-items: center; gap: 0.3rem;
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 0.2rem 0.5rem; font-size: 0.78rem; background: var(--surface-2);
+      font-weight: 700;
+    }
+    .wl-chip button {
+      background: none; border: none; color: var(--danger); cursor: pointer;
+      padding: 0; font-size: 0.85rem; line-height: 1;
+    }
+
     /* ── Research Feed panel ── */
     .research-section { margin-bottom: 1.25rem; }
     .research-section h3 {
@@ -388,6 +442,16 @@
 
     <!-- ZONE 3+: Results (hidden until run) -->
     <div id="results" hidden>
+
+      <!-- Today's Recommended Buys -->
+      <article class="card rec-card" id="rec-card" hidden>
+        <div class="card-head">
+          <h2>Today's Recommended Buys</h2>
+          <span class="signal-chip signal-aligned" id="rec-subtitle"></span>
+        </div>
+        <div class="rec-grid" id="rec-grid"></div>
+      </article>
+
       <div class="results-grid">
         <!-- LEFT: Verdict → Moves → Actions -->
         <div class="main-col">
@@ -444,6 +508,22 @@
         <div id="recon-gate" hidden></div>
       </div>
       <div class="tab-panel card" id="panel-research">
+        <!-- Watchlist manager -->
+        <div class="research-section">
+          <h3>My Watchlist</h3>
+          <div class="watchlist-row">
+            <input id="wl-input" placeholder="Add ticker (e.g. NVDA)" maxlength="12" style="text-transform:uppercase" />
+            <button class="btn-ok" type="button" id="wl-add-btn">Add</button>
+          </div>
+          <div class="watchlist-chips" id="wl-chips"><p class="empty">No watchlist symbols yet.</p></div>
+        </div>
+
+        <!-- Trending on social -->
+        <div class="research-section">
+          <h3>Trending on Social (Reddit · WSB · r/stocks)</h3>
+          <div class="trending-grid" id="research-trending"><p class="empty">Run analysis to load trending.</p></div>
+        </div>
+
         <div class="research-section" id="research-news-section">
           <h3>Live News</h3>
           <div id="research-news"><p class="empty">Run analysis to load news.</p></div>
@@ -794,6 +874,63 @@
       return brief;
     }
 
+    function renderRecommendedBuys(state) {
+      const buys = state.recommended_buys || [];
+      const card = document.getElementById("rec-card");
+      const grid = document.getElementById("rec-grid");
+      const subtitle = document.getElementById("rec-subtitle");
+      if (!buys.length) { card.hidden = true; return; }
+      card.hidden = false;
+      subtitle.textContent = "Top " + buys.length + " picks · updated this run";
+      grid.innerHTML = buys.map((b, i) => {
+        const pctCls = b.direction === "up" ? "up" : "flat";
+        const pctStr = b.direction === "up" ? "+" + b.return_pct.toFixed(1) + "% / " + b.horizon_days + "d" : "Flat";
+        return '<div class="rec-item' + (i === 0 ? " top-pick" : "") + '">' +
+          '<div class="rec-rank">' + (i === 0 ? "🏆 Top Pick" : "#" + (i + 1)) + '</div>' +
+          '<div class="rec-symbol">' + esc(b.symbol) + '</div>' +
+          '<div class="rec-score">' + b.score.toFixed(0) + '/100</div>' +
+          '<div class="rec-pct ' + pctCls + '">' + esc(pctStr) + '</div>' +
+          (b.analyst_note ? '<div class="rec-analyst">' + esc(b.analyst_note) + '</div>' : '') +
+          (b.top_headline ? '<div class="rec-headline">' + esc(b.top_headline) + '</div>' : '') +
+          (b.social_mentions ? '<div class="rec-social">' + b.social_mentions + ' social mentions</div>' : '') +
+          '</div>';
+      }).join("");
+    }
+
+    function renderTrending(state) {
+      const trending = state.trending_social || [];
+      const el = document.getElementById("research-trending");
+      if (!trending.length) { el.innerHTML = '<p class="empty">No trending data.</p>'; return; }
+      el.innerHTML = '<div class="trending-grid">' + trending.slice(0, 20).map(t =>
+        '<div class="trend-chip">' +
+        '<span class="sym">' + esc(t.symbol) + '</span>' +
+        '<span class="cnt">' + t.mentions + ' mention' + (t.mentions > 1 ? 's' : '') + '</span>' +
+        '</div>'
+      ).join("") + '</div>';
+    }
+
+    async function loadWatchlist() {
+      try {
+        const data = await api("/watchlist");
+        renderWatchlistChips(data.symbols || []);
+      } catch (e) {}
+    }
+
+    function renderWatchlistChips(symbols) {
+      const el = document.getElementById("wl-chips");
+      if (!symbols.length) { el.innerHTML = '<p class="empty">No watchlist symbols yet.</p>'; return; }
+      el.innerHTML = symbols.map(s =>
+        '<div class="wl-chip"><span>' + esc(s) + '</span>' +
+        '<button type="button" data-wl-remove="' + esc(s) + '" title="Remove">×</button></div>'
+      ).join("");
+      el.querySelectorAll("[data-wl-remove]").forEach(btn => {
+        btn.onclick = async () => {
+          await api("/watchlist/" + btn.dataset.wlRemove, { method: "DELETE" });
+          loadWatchlist();
+        };
+      });
+    }
+
     function renderResearchFeed(state) {
       const notes = state.research_notes || [];
       const flags = state.risk_flags || [];
@@ -824,6 +961,7 @@
         }).join("");
       }
 
+      renderTrending(state);
       document.getElementById("research-news").innerHTML = newsHtml(news, "you");
       document.getElementById("research-analyst").innerHTML = newsHtml(analyst, "analyst");
       document.getElementById("research-macro").innerHTML = newsHtml(macro, "macro");
@@ -854,6 +992,7 @@
       renderActions(brief);
       renderTabs(brief);
       renderResearchFeed(state);
+      renderRecommendedBuys(state);
       scheduleRefresh(state);
     }
 
@@ -1187,7 +1326,21 @@
     document.getElementById("reload-ledger-btn").addEventListener("click", loadLedger);
 
     document.getElementById("transaction-form").querySelector('[name="posted_on"]').valueAsDate = new Date();
+
+    document.getElementById("wl-add-btn").addEventListener("click", async () => {
+      const input = document.getElementById("wl-input");
+      const sym = input.value.trim().toUpperCase();
+      if (!sym) return;
+      await api("/watchlist", { method: "POST", body: JSON.stringify({ symbol: sym }) });
+      input.value = "";
+      loadWatchlist();
+    });
+    document.getElementById("wl-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("wl-add-btn").click();
+    });
+
     loadLedger();
+    loadWatchlist();
   </script>
 </body>
 </html>
