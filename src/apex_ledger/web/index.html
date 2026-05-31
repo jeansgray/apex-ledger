@@ -641,7 +641,7 @@
     <div id="results" hidden>
 
       <!-- Today's Recommended Buys — horizontal strip -->
-      <article class="card rec-card fade-in fade-in-1" id="rec-card" hidden>
+      <article class="card rec-card" id="rec-card" hidden>
         <div class="card-head" style="margin-bottom:0.7rem">
           <h2>Today's Recommended Buys</h2>
           <span class="signal-chip signal-aligned" id="rec-subtitle"></span>
@@ -650,7 +650,7 @@
       </article>
 
       <!-- Live Forecasts horizontal strip -->
-      <article class="card fade-in fade-in-2" id="forecast-rail" hidden>
+      <article class="card" id="forecast-rail" hidden>
         <div class="card-head" style="margin-bottom:0.6rem">
           <h2>Live Forecasts</h2>
           <span id="signal-chip" class="signal-chip signal-aligned" hidden></span>
@@ -658,17 +658,13 @@
         <div class="forecast-strip" id="forecasts"></div>
       </article>
 
-      <!-- 2-col: Verdict + Research side by side -->
-      <div class="results-grid fade-in fade-in-3" style="grid-template-columns:1fr;gap:1rem">
+      <!-- Verdict -->
+      <div class="results-grid" style="grid-template-columns:1fr;gap:1rem">
         <article class="card verdict" id="verdict"></article>
-        <article class="card">
-          <div class="card-head"><h2>Next steps</h2></div>
-          <div id="actions"></div>
-        </article>
       </div>
 
       <!-- Research Feed — always visible after run -->
-      <article class="card fade-in" style="animation-delay:0.28s" id="research-feed-card" hidden>
+      <article class="card" id="research-feed-card" hidden>
         <div class="card-head" style="margin-bottom:0.75rem">
           <h2>Research Feed</h2>
           <div style="display:flex;gap:0.5rem;align-items:center">
@@ -1174,7 +1170,7 @@
       renderVerdict(brief);
       renderForecasts(brief, state);
       renderMoves(brief, state);
-      renderActions(brief);
+      /* renderActions removed */
       renderTabs(brief);
       renderResearchFeed(state);
       document.getElementById("research-feed-card").hidden = false;
